@@ -49,17 +49,7 @@ app.get("/login", (req: Request, res: Response) => {
 
 app.post("/login", (req: Request, res: Response) => {
   const { username, password } = req.body;
-  const token = req.cookies.token;
-  if (token) {
-    try {
-      jwt.verify(token, process.env.JWT_SECRET as string);
-      res.json({ message: "You are already logged in" });
-      res.redirect("/");
-      return;
-    } catch (e) {
-      console.log("Invalid Token from signin route and error:", e);
-    }
-  }
+
   if (!username || !password) {
     res.status(400).json({
       message: "Missing required fields",
