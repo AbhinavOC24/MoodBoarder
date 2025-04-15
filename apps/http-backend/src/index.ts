@@ -43,10 +43,6 @@ app.post("/signup", (req: Request, res: Response) => {
   });
 });
 
-app.get("/login", (req: Request, res: Response) => {
-  res.json({ message: "Please use POST method for login" });
-});
-
 app.post("/login", (req: Request, res: Response) => {
   const { username, password } = req.body;
 
