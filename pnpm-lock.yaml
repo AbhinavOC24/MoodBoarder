@@ -7,6 +7,16 @@ settings:
 importers:
 
   .:
+    dependencies:
+      '@types/jsonwebtoken':
+        specifier: ^9.0.9
+        version: 9.0.9
+      dotenv:
+        specifier: ^16.5.0
+        version: 16.5.0
+      jsonwebtoken:
+        specifier: ^9.0.2
+        version: 9.0.2
     devDependencies:
       prettier:
         specifier: ^3.5.3
@@ -29,21 +39,12 @@ importers:
       '@types/express':
         specifier: ^5.0.1
         version: 5.0.1
-      '@types/jsonwebtoken':
-        specifier: ^9.0.9
-        version: 9.0.9
       cookie-parser:
         specifier: ^1.4.7
         version: 1.4.7
-      dotenv:
-        specifier: ^16.5.0
-        version: 16.5.0
       express:
         specifier: ^5.1.0
         version: 5.1.0
-      jsonwebtoken:
-        specifier: ^9.0.2
-        version: 9.0.2
 
   apps/web:
     dependencies:
