@@ -1,9 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import jwt from "jsonwebtoken";
-
-interface JwtPayload {
-  userId: string;
-}
+import jwt, { JwtPayload } from "jsonwebtoken";
 
 export default function checkAuth(
   req: Request,
@@ -19,11 +15,8 @@ export default function checkAuth(
   }
 
   try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET as string
-    ) as JwtPayload;
-    req.userId = decoded.userId;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
+    req.userId = (decoded as JwtPayload).userId;
     next();
   } catch (error) {
     res.status(401).json({

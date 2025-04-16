@@ -1,22 +1,28 @@
 import express from "express";
 import { Request, Response } from "express";
-const app = express();
 import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
+import { jwtSecret } from "@repo/backend-common/config";
 import cookieParser from "cookie-parser";
 import checkAuth from "./middleware/checkAuth";
+import { createUserSchema, signInSchema } from "@repo/common/types";
 
-dotenv.config();
+const app = express();
 app.use(express.json());
 app.use(cookieParser());
-
-const jwtSecret = process.env.JWT_SECRET || null;
 
 app.listen(3001, () => {
   console.log("Server is running on port 3001");
 });
 
 app.post("/signup", (req: Request, res: Response) => {
+  const data = createUserSchema.safeParse(req.body);
+  if (!data.success) {
+    res.status(400).json({
+      message: "Incorrect data",
+    });
+    return;
+  }
+
   const { username, email, password } = req.body;
   if (!username || !email || !password) {
     res.status(400).json({
@@ -31,7 +37,7 @@ app.post("/signup", (req: Request, res: Response) => {
     return;
   }
   const userId = "12345";
-  const token = jwt.sign({ userId }, jwtSecret as string, {
+  const token = jwt.sign({ userId }, jwtSecret, {
     expiresIn: "7d",
   });
   res.cookie("token", token);
@@ -44,6 +50,13 @@ app.post("/signup", (req: Request, res: Response) => {
 });
 
 app.post("/login", (req: Request, res: Response) => {
+  const data = signInSchema.safeParse(req.body);
+  if (!data.success) {
+    res.status(400).json({
+      message: "Incorrect credentials",
+    });
+    return;
+  }
   const { username, password } = req.body;
 
   if (!username || !password) {
