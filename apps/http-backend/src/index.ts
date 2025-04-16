@@ -5,7 +5,7 @@ import { jwtSecret } from "@repo/backend-common/config";
 import cookieParser from "cookie-parser";
 import checkAuth from "./middleware/checkAuth";
 import { createUserSchema, signInSchema } from "@repo/common/types";
-
+import { prismaClient } from "@repo/db/client";
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
