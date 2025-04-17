@@ -78,47 +78,51 @@ app.post("/signup", async (req: Request, res: Response) => {
 });
 
 app.post("/login", async (req: Request, res: Response) => {
-  const userInfo = signInSchema.safeParse(req.body);
-  if (!userInfo.success) {
-    res.status(400).json({
-      message: "Incorrect credentials",
+  try {
+    const userInfo = signInSchema.safeParse(req.body);
+    if (!userInfo.success) {
+      res.status(400).json({
+        message: "Incorrect credentials",
+      });
+      return;
+    }
+    const userInfoFromDb = await prismaClient.user.findUnique({
+      where: {
+        email: userInfo.data.email,
+      },
     });
-    return;
-  }
-  const userInfoFromDb = await prismaClient.user.findUnique({
-    where: {
-      email: userInfo.data.email,
-    },
-  });
 
-  if (!userInfoFromDb) {
-    res.status(404).json({
-      message: "Incorrect credentials",
-    });
-    return;
-  }
-  const checkPass = await bcrypt.compare(
-    userInfo.data.password,
-    userInfoFromDb.password
-  );
-  if (!checkPass) {
-    res.status(401).json({
-      message: "Incorrect credentials",
-    });
-    return;
-  }
+    if (!userInfoFromDb) {
+      res.status(404).json({
+        message: "Incorrect credentials",
+      });
+      return;
+    }
+    const checkPass = await bcrypt.compare(
+      userInfo.data.password,
+      userInfoFromDb.password
+    );
+    if (!checkPass) {
+      res.status(401).json({
+        message: "Incorrect credentials",
+      });
+      return;
+    }
 
-  const userId = userInfoFromDb.id;
-  const token = jwt.sign({ userId }, jwtSecret as string, {
-    expiresIn: "7d",
-  });
-  res.cookie("token", token, {
-    httpOnly: true,
-    secure: NODE_ENV === "production",
-  });
-  res.status(200).json({
-    message: "Login successful",
-  });
+    const userId = userInfoFromDb.id;
+    const token = jwt.sign({ userId }, jwtSecret as string, {
+      expiresIn: "7d",
+    });
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: NODE_ENV === "production",
+    });
+    res.status(200).json({
+      message: "Login successful",
+    });
+  } catch (e) {
+    res.status(500).json({ error: e });
+  }
 });
 
 app.get("/logout", checkAuth, async (req: Request, res: Response) => {
@@ -127,19 +131,29 @@ app.get("/logout", checkAuth, async (req: Request, res: Response) => {
 });
 
 app.post("/create-room", checkAuth, async (req: Request, res: Response) => {
-  // Add your implementation here
-
   try {
     const roomInfo = createRoomSchema.safeParse(req.body);
     if (!roomInfo.success) {
-      res.json({ message: "Incorrect inputs" });
+      res.status(400).json({ message: "Incorrect inputs" });
+      return;
+    }
+
+    const checkRoom = await prismaClient.room.findUnique({
+      where: {
+        slug: roomInfo.data.slug,
+      },
+    });
+    if (checkRoom) {
+      res.status(409).json({
+        message: "Room already exists",
+      });
       return;
     }
 
     const userId = req.userId;
-    await prismaClient.room.create({
+    const newRoom = await prismaClient.room.create({
       data: {
-        slug: roomInfo.data.name,
+        slug: roomInfo.data.slug,
         admin: {
           connect: {
             id: userId,
@@ -148,11 +162,12 @@ app.post("/create-room", checkAuth, async (req: Request, res: Response) => {
       },
     });
     res.status(201).json({
+      roomId: newRoom.id,
       message: "Room created successfully",
     });
   } catch (e) {
     res.status(500).json({
-      message: "Internal server error from createRoom",
+      message: "Internal server error from create Room",
     });
   }
 });
