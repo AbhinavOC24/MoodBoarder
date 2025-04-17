@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
-
+import { jwtSecret } from "@repo/backend-common/config";
 export default function checkAuth(
   req: Request,
   res: Response,
@@ -15,7 +15,7 @@ export default function checkAuth(
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
+    const decoded = jwt.verify(token, jwtSecret);
     req.userId = (decoded as JwtPayload).userId;
     next();
   } catch (error) {
