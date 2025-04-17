@@ -9,7 +9,7 @@ export default function checkAuth(
   const token = req.cookies.token;
   if (!token) {
     res.status(401).json({
-      message: "No token provided",
+      message: "Unauthorized",
     });
     return;
   }

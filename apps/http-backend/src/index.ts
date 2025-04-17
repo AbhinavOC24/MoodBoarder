@@ -21,44 +21,60 @@ app.listen(3001, () => {
 });
 
 app.post("/signup", async (req: Request, res: Response) => {
-  const userInfo = createUserSchema.safeParse(req.body);
-  if (!userInfo.success) {
-    res.status(401).json({
-      Error: userInfo.error,
-    });
-    return;
-  }
+  try {
+    const userInfo = createUserSchema.safeParse(req.body);
+    if (!userInfo.success) {
+      res.status(401).json({
+        Error: userInfo.error,
+      });
+      return;
+    }
 
-  if (!jwtSecret) {
+    if (!jwtSecret) {
+      res.status(500).json({
+        message: "JWT secret is not defined",
+      });
+      return;
+    }
+    const checkUser = await prismaClient.user.findUnique({
+      where: {
+        email: userInfo.data.email,
+      },
+    });
+
+    if (checkUser) {
+      res.json({ message: "Account already exists" });
+      return;
+    }
+    const hashedPassword = await bcrypt.hash(userInfo.data.password, 10);
+    const userInfoFromDb = await prismaClient.user.create({
+      data: {
+        username: userInfo.data.username,
+        password: hashedPassword,
+        email: userInfo.data.email,
+        photo: userInfo.data.photo || "https://robohash.org/default-avatar",
+      },
+      select: {
+        id: true,
+      },
+    });
+    const userId = userInfoFromDb.id;
+    const token = jwt.sign({ userId }, jwtSecret, {
+      expiresIn: "7d",
+    });
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: NODE_ENV === "production",
+    });
+    res.status(201).json({
+      message: "Signup successful",
+    });
+  } catch (e) {
     res.status(500).json({
-      message: "JWT secret is not defined",
+      Error: e,
+      message: "Internal server error from signup",
     });
-    return;
   }
-
-  const hashedPassword = await bcrypt.hash(userInfo.data.password, 10);
-  const userInfoFromDb = await prismaClient.user.create({
-    data: {
-      username: userInfo.data.username,
-      password: hashedPassword,
-      email: userInfo.data.email,
-      photo: userInfo.data.photo || "https://robohash.org/default-avatar",
-    },
-    select: {
-      id: true,
-    },
-  });
-  const userId = userInfoFromDb.id;
-  const token = jwt.sign({ userId }, jwtSecret, {
-    expiresIn: "7d",
-  });
-  res.cookie("token", token, {
-    httpOnly: true,
-    secure: NODE_ENV === "production",
-  });
-  res.status(201).json({
-    message: "Signup successful",
-  });
 });
 
 app.post("/login", async (req: Request, res: Response) => {
@@ -105,27 +121,38 @@ app.post("/login", async (req: Request, res: Response) => {
   });
 });
 
+app.get("/logout", checkAuth, async (req: Request, res: Response) => {
+  res.clearCookie("token");
+  res.json({ message: "logged out succesfully" });
+});
+
 app.post("/create-room", checkAuth, async (req: Request, res: Response) => {
   // Add your implementation here
 
-  const roomInfo = createRoomSchema.safeParse(req.body);
-  if (!roomInfo.success) {
-    res.json({ message: "Incorrect inputs" });
-    return;
-  }
+  try {
+    const roomInfo = createRoomSchema.safeParse(req.body);
+    if (!roomInfo.success) {
+      res.json({ message: "Incorrect inputs" });
+      return;
+    }
 
-  const userId = req.userId;
-  await prismaClient.room.create({
-    data: {
-      slug: roomInfo.data.name,
-      admin: {
-        connect: {
-          id: userId,
+    const userId = req.userId;
+    await prismaClient.room.create({
+      data: {
+        slug: roomInfo.data.name,
+        admin: {
+          connect: {
+            id: userId,
+          },
         },
       },
-    },
-  });
-  res.status(201).json({
-    message: "Room created successfully",
-  });
+    });
+    res.status(201).json({
+      message: "Room created successfully",
+    });
+  } catch (e) {
+    res.status(500).json({
+      message: "Internal server error from createRoom",
+    });
+  }
 });
