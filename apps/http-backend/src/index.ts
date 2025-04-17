@@ -1,11 +1,15 @@
 import express from "express";
 import { Request, Response } from "express";
-import jwt from "jsonwebtoken";
+import jwt, { NotBeforeError } from "jsonwebtoken";
 import cookieParser from "cookie-parser";
 import bcrypt from "bcrypt";
 import checkAuth from "./middleware/checkAuth";
-import { createUserSchema, signInSchema } from "@repo/common/types";
-import { prismaClient } from "@repo/db/client";
+import {
+  createRoomSchema,
+  createUserSchema,
+  signInSchema,
+} from "@repo/common/types";
+import prismaClient from "@repo/db/client";
 import { jwtSecret, NODE_ENV } from "@repo/backend-common/config";
 
 const app = express();
@@ -19,8 +23,8 @@ app.listen(3001, () => {
 app.post("/signup", async (req: Request, res: Response) => {
   const userInfo = createUserSchema.safeParse(req.body);
   if (!userInfo.success) {
-    res.status(400).json({
-      message: "Incorrect data",
+    res.status(401).json({
+      Error: userInfo.error,
     });
     return;
   }
@@ -101,8 +105,26 @@ app.post("/login", async (req: Request, res: Response) => {
   });
 });
 
-app.post("/create-room", checkAuth, (req: Request, res: Response) => {
+app.post("/create-room", checkAuth, async (req: Request, res: Response) => {
   // Add your implementation here
+
+  const roomInfo = createRoomSchema.safeParse(req.body);
+  if (!roomInfo.success) {
+    res.json({ message: "Incorrect inputs" });
+    return;
+  }
+
+  const userId = req.userId;
+  await prismaClient.room.create({
+    data: {
+      slug: roomInfo.data.name,
+      admin: {
+        connect: {
+          id: userId,
+        },
+      },
+    },
+  });
   res.status(201).json({
     message: "Room created successfully",
   });

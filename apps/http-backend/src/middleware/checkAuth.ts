@@ -16,7 +16,9 @@ export default function checkAuth(
 
   try {
     const decoded = jwt.verify(token, jwtSecret);
+
     req.userId = (decoded as JwtPayload).userId;
+
     next();
   } catch (error) {
     res.status(401).json({
