@@ -21,7 +21,6 @@ function checkUser(token: string): string | null {
 
     return decoded.userId;
   } catch (e) {
-    console.log(e);
     return null;
   }
 }
@@ -74,7 +73,7 @@ wss.on("connection", function connection(ws, request) {
               message,
               room: {
                 connect: {
-                  id: roomId,
+                  id: Number(roomId),
                 },
               },
               user: {

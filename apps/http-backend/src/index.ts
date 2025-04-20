@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import jwt, { NotBeforeError } from "jsonwebtoken";
 import cookieParser from "cookie-parser";
 import bcrypt from "bcrypt";
+import cors from "cors";
 import checkAuth from "./middleware/checkAuth";
 import {
   createRoomSchema,
@@ -15,6 +16,7 @@ import { jwtSecret, NODE_ENV } from "@repo/backend-common/config";
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
+app.use(cors());
 
 app.listen(3001, () => {
   console.log("Server is running on port 3001");
@@ -126,8 +128,15 @@ app.post("/login", async (req: Request, res: Response) => {
 });
 
 app.get("/logout", checkAuth, async (req: Request, res: Response) => {
-  res.clearCookie("token");
-  res.json({ message: "logged out succesfully" });
+  try {
+    res.clearCookie("token");
+    res.status(200).json({ message: "logged out succesfully" });
+  } catch (e) {
+    res.status(500).json({
+      message: "Internal server error during logout",
+      error: e,
+    });
+  }
 });
 
 app.post("/create-room", checkAuth, async (req: Request, res: Response) => {
@@ -173,15 +182,46 @@ app.post("/create-room", checkAuth, async (req: Request, res: Response) => {
 });
 
 app.get("/chats/:roomId", async (req: Request, res: Response) => {
-  const roomId = Number(req.params.roomId);
-  const messages = await prismaClient.chat.findMany({
-    where: {
-      roomId,
-    },
-    orderBy: {
-      id: "desc",
-    },
-    take: 50,
-  });
-  res.json(messages);
+  try {
+    const roomId = Number(req.params.roomId);
+
+    const messages = await prismaClient.chat.findMany({
+      where: {
+        roomId,
+      },
+      orderBy: {
+        id: "desc",
+      },
+      take: 50,
+    });
+
+    res.status(200).json(messages);
+  } catch (e) {
+    res.status(500).json({
+      message: "Internal server error while fetching chats",
+      error: e,
+    });
+  }
+});
+
+app.get("/room/:slug", async (req: Request, res: Response) => {
+  try {
+    const slug = req.params.slug;
+    const room = await prismaClient.room.findUnique({
+      where: {
+        slug,
+      },
+    });
+
+    if (!room) {
+      res.status(404).json({ message: "Room not found" });
+      return;
+    }
+    res.status(200).json({ id: room.id });
+  } catch (e) {
+    res.status(500).json({
+      message: "Internal server error while fetching room",
+      error: e,
+    });
+  }
 });

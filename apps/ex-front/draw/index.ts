@@ -1,9 +1,43 @@
-export function initDraw(
-  ctx: CanvasRenderingContext2D,
-  canvas: HTMLCanvasElement
+import { HTTP_BACKEND } from "@/config";
+import axios from "axios";
+import { Socket } from "dgram";
+
+type Shape =
+  | {
+      type: "rect";
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    }
+  | {
+      type: "circle";
+      centerX: number;
+      centerY: number;
+      radius: number;
+    };
+
+export async function initDraw(
+  canvas: HTMLCanvasElement,
+  roomId: string,
+  socket: WebSocket
 ) {
-  ctx.fillStyle = "rgb(0,0,0)";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const ctx = canvas.getContext("2d");
+  let existingShape: Shape[] = await getExistingShape(roomId);
+
+  if (!ctx) return;
+
+  socket.onmessage = (event) => {
+    const message = JSON.parse(event.data);
+
+    if (message.type === "chat") {
+      const parsedShape = JSON.parse(message.message);
+      existingShape.push(parsedShape.shape);
+      clearCanvas(existingShape, canvas, ctx);
+    }
+  };
+
+  clearCanvas(existingShape, canvas, ctx);
 
   let start = false;
   let startX = 0;
@@ -12,20 +46,13 @@ export function initDraw(
     start = true;
     startX = e.clientX;
     startY = e.clientY;
-    console.log(e.clientX);
-    console.log(e.clientY);
   });
   canvas.addEventListener("mousemove", (e) => {
     if (start) {
       const width = e.clientX - startX;
       const height = e.clientY - startY;
 
-      console.log(e.clientX);
-      console.log(e.clientY);
-      ctx?.clearRect(0, 0, canvas.width, canvas.height);
-
-      ctx.fillStyle = "rgb(0,0,0)";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      clearCanvas(existingShape, canvas, ctx);
 
       ctx.strokeStyle = "rgb(255,255,255)";
       ctx?.strokeRect(startX, startY, width, height);
@@ -33,7 +60,49 @@ export function initDraw(
   });
   canvas.addEventListener("mouseup", (e) => {
     start = false;
-    console.log(e.clientX);
-    console.log(e.clientY);
+    const width = e.clientX - startX;
+    const height = e.clientY - startY;
+    const shape: Shape = {
+      type: "rect",
+      x: startX,
+      y: startY,
+      width,
+      height,
+    };
+    existingShape.push(shape);
+    socket.send(
+      JSON.stringify({
+        type: "chat",
+        message: JSON.stringify({ shape }),
+        roomId,
+      })
+    );
   });
+}
+function clearCanvas(
+  existingShape: Shape[],
+  canvas: HTMLCanvasElement,
+  ctx: CanvasRenderingContext2D
+) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "rgb(0,0,0)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  existingShape.forEach((shape) => {
+    if (shape.type === "rect") {
+      ctx.strokeStyle = "rgb(255,255,255)";
+      ctx?.strokeRect(shape.x, shape.y, shape.width, shape.height);
+    }
+  });
+}
+
+async function getExistingShape(roomId: string) {
+  const res = await axios.get(`${HTTP_BACKEND}/chats/${roomId}`);
+
+  const message = res.data;
+
+  const shapes = message.map((message: any) => {
+    const messageData = JSON.parse(message.message);
+    return messageData.shape;
+  });
+  return shapes;
 }
