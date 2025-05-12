@@ -21,8 +21,7 @@ export async function initDraw(
   canvas: HTMLCanvasElement,
   roomId: string,
   socket: WebSocket,
-  currentShape: string,
-  updateShape: React.Dispatch<React.SetStateAction<string>>
+  ShapeRef: React.MutableRefObject<string>
 ) {
   const ctx = canvas.getContext("2d");
   let existingShape: Shape[] = await getExistingShape(roomId);
@@ -53,23 +52,21 @@ export async function initDraw(
     const width = e.clientX - startX;
     const height = e.clientY - startY;
     if (start) {
-      if (currentShape === "rect") {
+      if (ShapeRef.current === "rect") {
         clearCanvas(existingShape, canvas, ctx);
 
         ctx.strokeStyle = "rgb(255,255,255)";
         ctx?.strokeRect(startX, startY, width, height);
-      } else if (currentShape === "circle") {
+      } else if (ShapeRef.current === "circle") {
         clearCanvas(existingShape, canvas, ctx);
-
         const centerX = startX + width / 2;
         const centerY = startY + height / 2;
         const radius = Math.sqrt(width ** 2 + height ** 2) / 2;
-
         ctx.beginPath();
         ctx.strokeStyle = "rgb(255,255,255)";
         ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
         ctx.stroke();
-      } else if (currentShape === "pointer") {
+      } else if (ShapeRef.current === "pointer") {
         // For pointer, just clear and redraw existing shapes
         clearCanvas(existingShape, canvas, ctx);
       }
@@ -79,7 +76,7 @@ export async function initDraw(
     start = false;
     const width = e.clientX - startX;
     const height = e.clientY - startY;
-    if (currentShape === "rect") {
+    if (ShapeRef.current === "rect") {
       const shape: Shape = {
         type: "rect",
         x: startX,
@@ -95,7 +92,7 @@ export async function initDraw(
           roomId,
         })
       );
-    } else if (currentShape === "circle") {
+    } else if (ShapeRef.current === "circle") {
       const centerX = startX + width / 2;
       const centerY = startY + height / 2;
       const radius = Math.sqrt(width ** 2 + height ** 2) / 2;
