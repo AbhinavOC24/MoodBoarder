@@ -20,7 +20,9 @@ type Shape =
 export async function initDraw(
   canvas: HTMLCanvasElement,
   roomId: string,
-  socket: WebSocket
+  socket: WebSocket,
+  currentShape: string,
+  updateShape: React.Dispatch<React.SetStateAction<string>>
 ) {
   const ctx = canvas.getContext("2d");
   let existingShape: Shape[] = await getExistingShape(roomId);
@@ -48,35 +50,72 @@ export async function initDraw(
     startY = e.clientY;
   });
   canvas.addEventListener("mousemove", (e) => {
+    const width = e.clientX - startX;
+    const height = e.clientY - startY;
     if (start) {
-      const width = e.clientX - startX;
-      const height = e.clientY - startY;
+      if (currentShape === "rect") {
+        clearCanvas(existingShape, canvas, ctx);
 
-      clearCanvas(existingShape, canvas, ctx);
+        ctx.strokeStyle = "rgb(255,255,255)";
+        ctx?.strokeRect(startX, startY, width, height);
+      } else if (currentShape === "circle") {
+        clearCanvas(existingShape, canvas, ctx);
 
-      ctx.strokeStyle = "rgb(255,255,255)";
-      ctx?.strokeRect(startX, startY, width, height);
+        const centerX = startX + width / 2;
+        const centerY = startY + height / 2;
+        const radius = Math.sqrt(width ** 2 + height ** 2) / 2;
+
+        ctx.beginPath();
+        ctx.strokeStyle = "rgb(255,255,255)";
+        ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+        ctx.stroke();
+      } else if (currentShape === "pointer") {
+        // For pointer, just clear and redraw existing shapes
+        clearCanvas(existingShape, canvas, ctx);
+      }
     }
   });
   canvas.addEventListener("mouseup", (e) => {
     start = false;
     const width = e.clientX - startX;
     const height = e.clientY - startY;
-    const shape: Shape = {
-      type: "rect",
-      x: startX,
-      y: startY,
-      width,
-      height,
-    };
-    existingShape.push(shape);
-    socket.send(
-      JSON.stringify({
-        type: "chat",
-        message: JSON.stringify({ shape }),
-        roomId,
-      })
-    );
+    if (currentShape === "rect") {
+      const shape: Shape = {
+        type: "rect",
+        x: startX,
+        y: startY,
+        width,
+        height,
+      };
+      existingShape.push(shape);
+      socket.send(
+        JSON.stringify({
+          type: "chat",
+          message: JSON.stringify({ shape }),
+          roomId,
+        })
+      );
+    } else if (currentShape === "circle") {
+      const centerX = startX + width / 2;
+      const centerY = startY + height / 2;
+      const radius = Math.sqrt(width ** 2 + height ** 2) / 2;
+
+      const shape: Shape = {
+        type: "circle",
+        centerX: centerX,
+        centerY: centerY,
+        radius: radius,
+      };
+      existingShape.push(shape);
+      socket.send(
+        JSON.stringify({
+          type: "chat",
+          message: JSON.stringify({ shape }),
+          roomId,
+        })
+      );
+    }
+    // For pointer, we don't need to do anything on mouseup
   });
 }
 function clearCanvas(
@@ -91,6 +130,19 @@ function clearCanvas(
     if (shape.type === "rect") {
       ctx.strokeStyle = "rgb(255,255,255)";
       ctx?.strokeRect(shape.x, shape.y, shape.width, shape.height);
+    }
+    if (shape.type == "circle") {
+      ctx.strokeStyle = "rgb(255,255,255)";
+      ctx.beginPath();
+      ctx?.arc(
+        shape.centerX,
+        shape.centerY,
+        shape.radius,
+        0,
+        2 * Math.PI,
+        false
+      );
+      ctx.stroke();
     }
   });
 }
