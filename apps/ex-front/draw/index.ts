@@ -15,6 +15,14 @@ type Shape =
       centerX: number;
       centerY: number;
       radius: number;
+    }
+  | {
+      type: "pencil";
+      points: { x: number; y: number }[];
+    }
+  | {
+      type: "eraser";
+      points: { x: number; y: number }[];
     };
 
 export async function initDraw(
@@ -43,10 +51,19 @@ export async function initDraw(
   let start = false;
   let startX = 0;
   let startY = 0;
+  let pencilPoints: { x: number; y: number }[] = [];
+  let eraserPoints: { x: number; y: number }[] = [];
+
   canvas.addEventListener("mousedown", (e) => {
     start = true;
     startX = e.clientX;
     startY = e.clientY;
+    if (ShapeRef.current === "pencil") {
+      pencilPoints = [{ x: startX, y: startY }];
+    }
+    if (ShapeRef.current === "eraser") {
+      eraserPoints = [{ x: startX, y: startY }];
+    }
   });
   canvas.addEventListener("mousemove", (e) => {
     const width = e.clientX - startX;
@@ -54,7 +71,6 @@ export async function initDraw(
     if (start) {
       if (ShapeRef.current === "rect") {
         clearCanvas(existingShape, canvas, ctx);
-
         ctx.strokeStyle = "rgb(255,255,255)";
         ctx?.strokeRect(startX, startY, width, height);
       } else if (ShapeRef.current === "circle") {
@@ -67,8 +83,29 @@ export async function initDraw(
         ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
         ctx.stroke();
       } else if (ShapeRef.current === "pointer") {
-        // For pointer, just clear and redraw existing shapes
         clearCanvas(existingShape, canvas, ctx);
+      } else if (ShapeRef.current === "pencil") {
+        pencilPoints.push({ x: e.clientX, y: e.clientY });
+        clearCanvas(existingShape, canvas, ctx);
+        ctx.strokeStyle = "rgb(255,255,255)";
+        ctx.beginPath();
+        ctx.moveTo(pencilPoints[0].x, pencilPoints[0].y);
+        for (let i = 1; i < pencilPoints.length; i++) {
+          ctx.lineTo(pencilPoints[i].x, pencilPoints[i].y);
+        }
+        ctx.stroke();
+      } else if (ShapeRef.current === "eraser") {
+        eraserPoints.push({ x: e.clientX, y: e.clientY });
+        clearCanvas(existingShape, canvas, ctx);
+        ctx.strokeStyle = "rgb(0,0,0)";
+        ctx.lineWidth = 30; // Increase this value for a thicker eraser
+        ctx.beginPath();
+        ctx.moveTo(eraserPoints[0].x, eraserPoints[0].y);
+        for (let i = 1; i < eraserPoints.length; i++) {
+          ctx.lineTo(eraserPoints[i].x, eraserPoints[i].y);
+        }
+        ctx.stroke();
+        ctx.lineWidth = 1; // Reset for other tools
       }
     }
   });
@@ -111,8 +148,33 @@ export async function initDraw(
           roomId,
         })
       );
+    } else if (ShapeRef.current === "pencil") {
+      const shape: Shape = {
+        type: "pencil",
+        points: pencilPoints,
+      };
+      existingShape.push(shape);
+      socket.send(
+        JSON.stringify({
+          type: "chat",
+          message: JSON.stringify({ shape }),
+          roomId,
+        })
+      );
+    } else if (ShapeRef.current === "eraser") {
+      const shape: Shape = {
+        type: "eraser",
+        points: eraserPoints,
+      };
+      existingShape.push(shape);
+      socket.send(
+        JSON.stringify({
+          type: "chat",
+          message: JSON.stringify({ shape }),
+          roomId,
+        })
+      );
     }
-    // For pointer, we don't need to do anything on mouseup
   });
 }
 function clearCanvas(
@@ -140,6 +202,26 @@ function clearCanvas(
         false
       );
       ctx.stroke();
+    }
+    if (shape.type == "pencil") {
+      ctx.strokeStyle = "rgb(255,255,255)";
+      ctx.beginPath();
+      ctx.moveTo(shape.points[0].x, shape.points[0].y);
+      for (let i = 1; i < shape.points.length; i++) {
+        ctx.lineTo(shape.points[i].x, shape.points[i].y);
+      }
+      ctx.stroke();
+    }
+    if (shape.type == "eraser") {
+      ctx.strokeStyle = "rgb(0,0,0)";
+      ctx.lineWidth = 30; // Match the eraser thickness here as well
+      ctx.beginPath();
+      ctx.moveTo(shape.points[0].x, shape.points[0].y);
+      for (let i = 1; i < shape.points.length; i++) {
+        ctx.lineTo(shape.points[i].x, shape.points[i].y);
+      }
+      ctx.stroke();
+      ctx.lineWidth = 1; // Reset for other tools
     }
   });
 }

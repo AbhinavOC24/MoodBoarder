@@ -1,6 +1,6 @@
 import React from "react";
 import IconButton from "./IconButton";
-import { Square, Circle, MousePointer2 } from "lucide-react";
+import { Square, Circle, MousePointer2, Pencil, Eraser } from "lucide-react";
 
 interface ToolbarProps {
   changeShape: (e: React.MouseEvent<HTMLButtonElement>) => void;
@@ -27,6 +27,18 @@ function Toolbar({ changeShape, currShape }: ToolbarProps) {
         changeShape={changeShape}
         currShape={currShape}
         value="pointer"
+      />
+      <IconButton
+        Icon={<Pencil />}
+        changeShape={changeShape}
+        currShape={currShape}
+        value="pencil"
+      />
+      <IconButton
+        Icon={<Eraser />}
+        changeShape={changeShape}
+        currShape={currShape}
+        value="eraser"
       />
     </div>
   );
