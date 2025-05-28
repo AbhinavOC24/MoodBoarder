@@ -1,6 +1,8 @@
 import { HTTP_BACKEND } from "@/config";
 import axios from "axios";
 import { Socket } from "dgram";
+import { trackSynchronousPlatformIOAccessInDev } from "next/dist/server/app-render/dynamic-rendering";
+import { v4 as uuidv4 } from "uuid";
 
 type Shape =
   | {
@@ -71,6 +73,63 @@ function drawArrow(
   ctx.stroke();
 }
 
+function intersectsEraser(
+  shape: Shape,
+  eraserPoints: { x: number; y: number }[]
+): boolean {
+  for (const pt of eraserPoints) {
+    if (shape.type === "rect") {
+      if (
+        pt.x >= shape.x &&
+        pt.x <= shape.x + shape.width &&
+        pt.y >= shape.y &&
+        pt.y <= shape.y + shape.height
+      ) {
+        return true;
+      }
+    }
+    if (shape.type === "circle") {
+      const dx = pt.x - shape.centerX;
+      const dy = pt.y - shape.centerY;
+      if (Math.sqrt(dx * dx + dy * dy) <= shape.radius) {
+        return true;
+      }
+    }
+
+    if (shape.type === "pencil" || shape.type === "eraser") {
+      for (const p of shape.points) {
+        const dx = pt.x - p.x;
+        const dy = pt.y - p.y;
+        if (Math.sqrt(dx * dx + dy * dy) <= 10) return true;
+      }
+    }
+
+    if (shape.type === "arrow") {
+      const minX = Math.min(shape.startX, shape.endX);
+      const maxX = Math.max(shape.startX, shape.endX);
+      const minY = Math.min(shape.startY, shape.endY);
+      const maxY = Math.max(shape.startY, shape.endY);
+      if (pt.x >= minX && pt.x <= maxX && pt.y >= minY && pt.y <= maxY) {
+        return true;
+      }
+    }
+
+    if (shape.type === "text") {
+      const fontSize = shape.fontSize || 16;
+      const textWidth = shape.text.length * fontSize * 0.6;
+      if (
+        pt.x >= shape.x &&
+        pt.x <= shape.x + textWidth &&
+        pt.y >= shape.y - fontSize &&
+        pt.y <= shape.y
+      ) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 export async function initDraw(
   canvas: HTMLCanvasElement,
   roomId: string,
@@ -78,7 +137,6 @@ export async function initDraw(
   ShapeRef: React.MutableRefObject<string>
 ) {
   const ctx = canvas.getContext("2d");
-  let existingShape: Shape[] = await getExistingShape(roomId);
 
   if (!ctx) return;
 
@@ -92,21 +150,14 @@ export async function initDraw(
     }
   };
 
-  clearCanvas(existingShape, canvas, ctx);
-
+  let existingShape: Shape[] = await getExistingShape(roomId);
+  let deletedShape: Shape[] = [];
+  let pencilPoints: { x: number; y: number }[] = [];
+  let eraserPoints: { x: number; y: number }[] = [];
   let start = false;
   let startX = 0;
   let startY = 0;
-  let pencilPoints: { x: number; y: number }[] = [];
-  let eraserPoints: { x: number; y: number }[] = [];
-
-  // Remove any existing text input when clicking elsewhere
-  const removeExistingTextInput = () => {
-    const existingInput = document.getElementById("canvas-text-input");
-    if (existingInput && existingInput.parentNode) {
-      existingInput.parentNode.removeChild(existingInput);
-    }
-  };
+  clearCanvas(existingShape, canvas, ctx);
 
   canvas.addEventListener("mousedown", (e) => {
     start = true;
@@ -120,15 +171,10 @@ export async function initDraw(
       eraserPoints = [{ x: startX, y: startY }];
     }
     if (ShapeRef.current === "text") {
-      // First remove any existing text input
-      // removeExistingTextInput();
-
-      // Get canvas position for accurate positioning
       const canvasRect = canvas.getBoundingClientRect();
 
-      // Create a temporary input element for text entry
       const input = document.createElement("input");
-      input.id = "canvas-text-input"; // Add ID for easy reference
+      input.id = "canvas-text-input";
       input.style.position = "absolute";
       input.style.left = `${e.clientX}px`;
       input.style.top = `${e.clientY}px`;
@@ -142,22 +188,22 @@ export async function initDraw(
       input.style.padding = "4px";
       input.style.zIndex = "1000";
 
-      // Add to document body
       document.body.appendChild(input);
 
-      // Focus after a small delay to ensure it's rendered
       setTimeout(() => {
         input.focus();
       }, 10);
 
-      // Handle text completion
       let completed = false;
       const handleComplete = () => {
+        // First, reset the drawing state
+        start = false;
+
         if (input.value.trim()) {
           const shape: Shape = {
             type: "text",
-            x: e.clientX - canvasRect.left, // Convert to canvas coordinates
-            y: e.clientY - canvasRect.top + 16, // Add offset for text baseline
+            x: e.clientX - canvasRect.left,
+            y: e.clientY - canvasRect.top + 16,
             text: input.value,
             fontSize: 16,
           };
@@ -168,25 +214,23 @@ export async function initDraw(
               type: "chat",
               message: JSON.stringify({ shape }),
               roomId,
+              shapeId: uuidv4(),
             })
           );
-
-          clearCanvas(existingShape, canvas, ctx);
         }
-
-        // Remove the input element
 
         if (input.parentNode && !completed) {
           completed = true;
           input.parentNode.removeChild(input);
+
+          clearCanvas(existingShape, canvas, ctx);
         }
       };
 
-      // Set up event listeners
       input.addEventListener("blur", handleComplete);
       input.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
-          e.preventDefault(); // Prevent default to avoid form submission
+          e.preventDefault();
           handleComplete();
         }
       });
@@ -223,17 +267,26 @@ export async function initDraw(
         }
         ctx.stroke();
       } else if (ShapeRef.current === "eraser") {
-        eraserPoints.push({ x: e.clientX, y: e.clientY });
+        const newPoint = { x: e.clientX, y: e.clientY };
+        eraserPoints.push(newPoint);
+
+        existingShape = existingShape.filter((shape) => {
+          const intersect = intersectsEraser(shape, eraserPoints);
+          if (intersect) {
+            deletedShape.push(shape);
+          }
+          return !intersect;
+        });
         clearCanvas(existingShape, canvas, ctx);
-        ctx.strokeStyle = "rgb(0,0,0)";
-        ctx.lineWidth = 30;
-        ctx.beginPath();
-        ctx.moveTo(eraserPoints[0].x, eraserPoints[0].y);
-        for (let i = 1; i < eraserPoints.length; i++) {
-          ctx.lineTo(eraserPoints[i].x, eraserPoints[i].y);
-        }
-        ctx.stroke();
-        ctx.lineWidth = 1;
+        // ctx.strokeStyle = "rgb(0,0,0)";
+        // ctx.lineWidth = 30;
+        // ctx.beginPath();
+        // ctx.moveTo(eraserPoints[0].x, eraserPoints[0].y);
+        // for (let i = 1; i < eraserPoints.length; i++) {
+        //   ctx.lineTo(eraserPoints[i].x, eraserPoints[i].y);
+        // }
+        // ctx.stroke();
+        // ctx.lineWidth = 1;
       } else if (ShapeRef.current === "arrow") {
         clearCanvas(existingShape, canvas, ctx);
         ctx.strokeStyle = "rgb(255,255,255)";
@@ -243,17 +296,15 @@ export async function initDraw(
       }
     }
   });
-
+  let shape: Shape;
   canvas.addEventListener("mouseup", (e) => {
     start = false;
     const width = e.clientX - startX;
     const height = e.clientY - startY;
 
-    // Skip text handling in mouseup since it's handled in the input's events
     if (ShapeRef.current === "text") {
       return;
     }
-
     if (ShapeRef.current === "rect") {
       const shape: Shape = {
         type: "rect",
@@ -267,6 +318,7 @@ export async function initDraw(
         JSON.stringify({
           type: "chat",
           message: JSON.stringify({ shape }),
+          shapeId: uuidv4(),
           roomId,
         })
       );
@@ -286,6 +338,7 @@ export async function initDraw(
         JSON.stringify({
           type: "chat",
           message: JSON.stringify({ shape }),
+          shapeId: uuidv4(),
           roomId,
         })
       );
@@ -299,19 +352,21 @@ export async function initDraw(
         JSON.stringify({
           type: "chat",
           message: JSON.stringify({ shape }),
+          shapeId: uuidv4(),
+
           roomId,
         })
       );
     } else if (ShapeRef.current === "eraser") {
-      const shape: Shape = {
-        type: "eraser",
-        points: eraserPoints,
-      };
-      existingShape.push(shape);
+      // const shape: Shape = {
+      //   type: "eraser",
+      //   points: eraserPoints,
+      // };
+      // existingShape.push(shape);
       socket.send(
         JSON.stringify({
-          type: "chat",
-          message: JSON.stringify({ shape }),
+          type: "deleted",
+          message: JSON.stringify({ deletedShape }),
           roomId,
         })
       );
@@ -329,6 +384,7 @@ export async function initDraw(
           type: "chat",
           message: JSON.stringify({ shape }),
           roomId,
+          shapeId: uuidv4(),
         })
       );
     }
@@ -371,17 +427,17 @@ function clearCanvas(
       }
       ctx.stroke();
     }
-    if (shape.type == "eraser") {
-      ctx.strokeStyle = "rgb(0,0,0)";
-      ctx.lineWidth = 30;
-      ctx.beginPath();
-      ctx.moveTo(shape.points[0].x, shape.points[0].y);
-      for (let i = 1; i < shape.points.length; i++) {
-        ctx.lineTo(shape.points[i].x, shape.points[i].y);
-      }
-      ctx.stroke();
-      ctx.lineWidth = 1;
-    }
+    // if (shape.type == "eraser") {
+    //   ctx.strokeStyle = "rgb(0,0,0)";
+    //   ctx.lineWidth = 30;
+    //   ctx.beginPath();
+    //   ctx.moveTo(shape.points[0].x, shape.points[0].y);
+    //   for (let i = 1; i < shape.points.length; i++) {
+    //     ctx.lineTo(shape.points[i].x, shape.points[i].y);
+    //   }
+    //   ctx.stroke();
+    //   ctx.lineWidth = 1;
+    // }
     if (shape.type == "arrow") {
       ctx.strokeStyle = "rgb(255,255,255)";
       ctx.lineWidth = 2;

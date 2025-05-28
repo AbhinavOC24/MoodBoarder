@@ -64,6 +64,7 @@ wss.on("connection", function connection(ws, request) {
       }
 
       if (parsedData.type === "chat") {
+        const shapeId = parsedData.shapeId;
         const roomId = parsedData.roomId;
         const message = parsedData.message;
         const theUser = users.find((x) => x.ws === ws);
@@ -82,6 +83,7 @@ wss.on("connection", function connection(ws, request) {
                   id: userId,
                 },
               },
+              shapeId,
             },
           });
           users.forEach((user) => {
