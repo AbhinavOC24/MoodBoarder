@@ -83,7 +83,6 @@ wss.on("connection", function connection(ws, request) {
                   id: userId,
                 },
               },
-              shapeId,
             },
           });
           users.forEach((user) => {
