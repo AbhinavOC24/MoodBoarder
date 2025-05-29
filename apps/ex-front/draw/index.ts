@@ -11,20 +11,24 @@ type Shape =
       y: number;
       width: number;
       height: number;
+      shapeId: string;
     }
   | {
       type: "circle";
       centerX: number;
       centerY: number;
       radius: number;
+      shapeId: string;
     }
   | {
       type: "pencil";
       points: { x: number; y: number }[];
+      shapeId: string;
     }
   | {
       type: "eraser";
       points: { x: number; y: number }[];
+      shapeId: string;
     }
   | {
       type: "arrow";
@@ -32,6 +36,7 @@ type Shape =
       startY: number;
       endX: number;
       endY: number;
+      shapeId: string;
     }
   | {
       type: "text";
@@ -39,6 +44,7 @@ type Shape =
       y: number;
       text: string;
       fontSize?: number;
+      shapeId: string;
     };
 
 // Helper function to draw an arrow
@@ -148,6 +154,15 @@ export async function initDraw(
       existingShape.push(parsedShape.shape);
       clearCanvas(existingShape, canvas, ctx);
     }
+
+    if (message.type === "deleted") {
+      console.log(message.message);
+      const shapeIdsToDelete = message.message;
+      existingShape = existingShape.filter(
+        (shape) => !shapeIdsToDelete.includes(shape.shapeId)
+      );
+      clearCanvas(existingShape, canvas, ctx);
+    }
   };
 
   let existingShape: Shape[] = await getExistingShape(roomId);
@@ -206,6 +221,7 @@ export async function initDraw(
             y: e.clientY - canvasRect.top + 16,
             text: input.value,
             fontSize: 16,
+            shapeId: uuidv4(),
           };
 
           existingShape.push(shape);
@@ -214,7 +230,6 @@ export async function initDraw(
               type: "chat",
               message: JSON.stringify({ shape }),
               roomId,
-              shapeId: uuidv4(),
             })
           );
         }
@@ -272,6 +287,7 @@ export async function initDraw(
 
         existingShape = existingShape.filter((shape) => {
           const intersect = intersectsEraser(shape, eraserPoints);
+
           if (intersect) {
             deletedShape.push(shape);
           }
@@ -312,13 +328,13 @@ export async function initDraw(
         y: startY,
         width,
         height,
+        shapeId: uuidv4(),
       };
       existingShape.push(shape);
       socket.send(
         JSON.stringify({
           type: "chat",
           message: JSON.stringify({ shape }),
-          shapeId: uuidv4(),
           roomId,
         })
       );
@@ -332,13 +348,13 @@ export async function initDraw(
         centerX: centerX,
         centerY: centerY,
         radius: radius,
+        shapeId: uuidv4(),
       };
       existingShape.push(shape);
       socket.send(
         JSON.stringify({
           type: "chat",
           message: JSON.stringify({ shape }),
-          shapeId: uuidv4(),
           roomId,
         })
       );
@@ -346,14 +362,13 @@ export async function initDraw(
       const shape: Shape = {
         type: "pencil",
         points: pencilPoints,
+        shapeId: uuidv4(),
       };
       existingShape.push(shape);
       socket.send(
         JSON.stringify({
           type: "chat",
           message: JSON.stringify({ shape }),
-          shapeId: uuidv4(),
-
           roomId,
         })
       );
@@ -363,6 +378,7 @@ export async function initDraw(
       //   points: eraserPoints,
       // };
       // existingShape.push(shape);
+
       socket.send(
         JSON.stringify({
           type: "deleted",
@@ -370,6 +386,7 @@ export async function initDraw(
           roomId,
         })
       );
+      deletedShape = [];
     } else if (ShapeRef.current === "arrow") {
       const shape: Shape = {
         type: "arrow",
@@ -377,6 +394,7 @@ export async function initDraw(
         startY: startY,
         endX: e.clientX,
         endY: e.clientY,
+        shapeId: uuidv4(),
       };
       existingShape.push(shape);
       socket.send(
@@ -384,7 +402,6 @@ export async function initDraw(
           type: "chat",
           message: JSON.stringify({ shape }),
           roomId,
-          shapeId: uuidv4(),
         })
       );
     }

@@ -64,9 +64,9 @@ wss.on("connection", function connection(ws, request) {
       }
 
       if (parsedData.type === "chat") {
-        const shapeId = parsedData.shapeId;
         const roomId = parsedData.roomId;
         const message = parsedData.message;
+        const shapeId = JSON.parse(message).shape.shapeId;
         const theUser = users.find((x) => x.ws === ws);
 
         if (theUser?.rooms.includes(roomId)) {
@@ -83,6 +83,7 @@ wss.on("connection", function connection(ws, request) {
                   id: userId,
                 },
               },
+              shapeId,
             },
           });
           users.forEach((user) => {
@@ -95,6 +96,35 @@ wss.on("connection", function connection(ws, request) {
             }
           });
         }
+      }
+      if (parsedData.type === "deleted") {
+        const roomId = parsedData.roomId;
+
+        const { deletedShape } = JSON.parse(parsedData.message);
+        console.log("deletedShape", deletedShape);
+        const shapeIdsToDelete = deletedShape.map(
+          (shape: any) => shape.shapeId
+        );
+
+        await prismaClient.chat.deleteMany({
+          where: {
+            shapeId: {
+              in: shapeIdsToDelete,
+            },
+          },
+        });
+        console.log("shapeIdsToDelete", shapeIdsToDelete);
+        users.forEach((user) => {
+          if (user.ws != ws && user.rooms.includes(roomId)) {
+            user.ws.send(
+              JSON.stringify({
+                type: "deleted",
+                message: shapeIdsToDelete,
+                roomId,
+              })
+            );
+          }
+        });
       }
     });
   } catch (e) {
