@@ -6,6 +6,7 @@ import { Shape } from "../utils/types";
 import { drawArrow, intersectsEraser } from "../utils/drawUtils";
 import { getExistingShape } from "../utils/fetchShapes";
 import { clearCanvas } from "../utils/clearCanvas";
+import { mouseDownText } from "@/utils/eventHandlers/mouseDown/Text";
 
 export async function initDraw(
   canvas: HTMLCanvasElement,
@@ -16,6 +17,8 @@ export async function initDraw(
   const ctx = canvas.getContext("2d");
 
   if (!ctx) return;
+
+  let existingShape: Shape[] = await getExistingShape(roomId);
 
   socket.onmessage = (event) => {
     const message = JSON.parse(event.data);
@@ -36,7 +39,6 @@ export async function initDraw(
     }
   };
 
-  let existingShape: Shape[] = await getExistingShape(roomId);
   let deletedShape: Shape[] = [];
   let pencilPoints: { x: number; y: number }[] = [];
   let eraserPoints: { x: number; y: number }[] = [];
@@ -57,69 +59,69 @@ export async function initDraw(
       eraserPoints = [{ x: startX, y: startY }];
     }
     if (ShapeRef.current === "text") {
-      const canvasRect = canvas.getBoundingClientRect();
+      mouseDownText(canvas, e, start, socket, roomId, ctx, existingShape);
+      // const canvasRect = canvas.getBoundingClientRect();
 
-      const input = document.createElement("input");
-      input.id = "canvas-text-input";
-      input.style.position = "absolute";
-      input.style.left = `${e.clientX}px`;
-      input.style.top = `${e.clientY}px`;
-      input.style.background = "transparent";
-      input.style.color = "white";
-      input.style.border = "1px solid white";
-      input.style.outline = "none";
-      input.style.minWidth = "100px";
-      input.style.fontFamily = "sans-serif";
-      input.style.fontSize = "16px";
-      input.style.padding = "4px";
-      input.style.zIndex = "1000";
+      // const input = document.createElement("input");
+      // input.id = "canvas-text-input";
+      // input.style.position = "absolute";
+      // input.style.left = `${e.clientX}px`;
+      // input.style.top = `${e.clientY}px`;
+      // input.style.background = "transparent";
+      // input.style.color = "white";
+      // input.style.border = "1px solid white";
+      // input.style.outline = "none";
+      // input.style.minWidth = "100px";
+      // input.style.fontFamily = "sans-serif";
+      // input.style.fontSize = "16px";
+      // input.style.padding = "4px";
+      // input.style.zIndex = "1000";
 
-      document.body.appendChild(input);
+      // document.body.appendChild(input);
 
-      setTimeout(() => {
-        input.focus();
-      }, 10);
+      // setTimeout(() => {
+      //   input.focus();
+      // }, 10);
 
-      let completed = false;
-      const handleComplete = () => {
-        // First, reset the drawing state
-        start = false;
+      // let completed = false;
+      // const handleComplete = () => {
+      //   start = false;
 
-        if (input.value.trim()) {
-          const shape: Shape = {
-            type: "text",
-            x: e.clientX - canvasRect.left,
-            y: e.clientY - canvasRect.top + 16,
-            text: input.value,
-            fontSize: 16,
-            shapeId: uuidv4(),
-          };
+      //   if (input.value.trim()) {
+      //     const shape: Shape = {
+      //       type: "text",
+      //       x: e.clientX - canvasRect.left,
+      //       y: e.clientY - canvasRect.top + 16,
+      //       text: input.value,
+      //       fontSize: 16,
+      //       shapeId: uuidv4(),
+      //     };
 
-          existingShape.push(shape);
-          socket.send(
-            JSON.stringify({
-              type: "chat",
-              message: JSON.stringify({ shape }),
-              roomId,
-            })
-          );
-        }
+      //     existingShape.push(shape);
+      //     socket.send(
+      //       JSON.stringify({
+      //         type: "chat",
+      //         message: JSON.stringify({ shape }),
+      //         roomId,
+      //       })
+      //     );
+      //   }
 
-        if (input.parentNode && !completed) {
-          completed = true;
-          input.parentNode.removeChild(input);
+      //   if (input.parentNode && !completed) {
+      //     completed = true;
+      //     input.parentNode.removeChild(input);
 
-          clearCanvas(existingShape, canvas, ctx);
-        }
-      };
+      //     clearCanvas(existingShape, canvas, ctx);
+      //   }
+      // };
 
-      input.addEventListener("blur", handleComplete);
-      input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          handleComplete();
-        }
-      });
+      // input.addEventListener("blur", handleComplete);
+      // input.addEventListener("keydown", (e) => {
+      //   if (e.key === "Enter") {
+      //     e.preventDefault();
+      //     handleComplete();
+      //   }
+      // });
     }
   });
 
