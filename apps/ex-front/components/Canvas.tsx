@@ -1,6 +1,6 @@
 //actual canvas
 
-import { initDraw } from "@/draw";
+import { initDraw } from "@/draw/drawLogic";
 import React, { useEffect, useRef, useState } from "react";
 import Toolbar from "./canvas/Toolbar";
 function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
@@ -19,7 +19,10 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
   }, [canvasRef]);
 
   return (
-    <div style={{ height: "100vh", overflow: "hidden" }} className="relative">
+    <div
+      style={{ height: "100vh", overflow: "hidden" }}
+      className="relative flex justify-center"
+    >
       <Toolbar changeShape={handleClick} currShape={currShape} />
       <canvas
         ref={canvasRef}

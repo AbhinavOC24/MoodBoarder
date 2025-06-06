@@ -62,16 +62,17 @@
 // export default Toolbar;
 
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Hand,
   MousePointer2,
-  Diamond,
+  Square,
   Circle,
   ArrowRight,
   Pen,
   Type,
   ImageIcon,
+  Eraser,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 
@@ -94,12 +95,13 @@ const toolbarItems: ToolbarItem[] = [
     shortcut: "2",
     label: "Selection Tool",
   },
-  { id: "rect", icon: Diamond, shortcut: "3", label: "Shape Tool" },
-  { id: "circle", icon: Circle, shortcut: "4", label: "Circle Tool" },
-  { id: "arrow", icon: ArrowRight, shortcut: "5", label: "Arrow Tool" },
-  { id: "pencil", icon: Pen, shortcut: "6", label: "Pen Tool" },
-  { id: "text", icon: Type, shortcut: "7", label: "Text Tool" },
-  { id: "image", icon: ImageIcon, shortcut: "8", label: "Image Tool" },
+  { id: "rect", icon: Square, shortcut: "3", label: "Rectangle" },
+  { id: "circle", icon: Circle, shortcut: "4", label: "Circle" },
+  { id: "arrow", icon: ArrowRight, shortcut: "5", label: "Arrow" },
+  { id: "pencil", icon: Pen, shortcut: "6", label: "Pen" },
+  { id: "text", icon: Type, shortcut: "7", label: "Text" },
+  { id: "image", icon: ImageIcon, shortcut: "8", label: "Image" },
+  { id: "eraser", icon: Eraser, shortcut: "9", label: "Eraser Tool" },
 ];
 
 export default function Toolbar({ changeShape }: ToolbarProps) {
@@ -110,18 +112,29 @@ export default function Toolbar({ changeShape }: ToolbarProps) {
     changeShape(toolId);
   };
 
-  const handleKeyDown = (event: React.KeyboardEvent) => {
-    const key = event.key;
-    const tool = toolbarItems.find((item) => item.shortcut === key);
-    if (tool) {
-      setSelectedTool(tool.id);
-    }
-  };
-
+  // const handleKeyDown = (event: React.KeyboardEvent) => {
+  //   const key = event.key;
+  //   const tool = toolbarItems.find((item) => item.shortcut === key);
+  //   if (tool) {
+  //     setSelectedTool(tool.id);
+  //     changeShape(tool.id);
+  //   }
+  // };
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const key = event.key;
+      const tool = toolbarItems.find((item) => item.shortcut === key);
+      if (tool) {
+        setSelectedTool(tool.id);
+        changeShape(tool.id);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [changeShape]);
   return (
     <div
-      className="flex items-center gap-1 bg-[#2D2D2D] p-2 rounded-lg shadow-lg"
-      onKeyDown={handleKeyDown}
+      className="absolute flex gap-2 bg-[#2D2D2D] p-2 rounded-lg shadow-lg"
       tabIndex={0}
     >
       {toolbarItems.map((item) => {

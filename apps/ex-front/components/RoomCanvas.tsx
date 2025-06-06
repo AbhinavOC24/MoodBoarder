@@ -1,7 +1,7 @@
 "use client";
 //opens up websocket connection
 import { WS_URL } from "@/config";
-import { initDraw } from "@/draw";
+import { initDraw } from "@/draw/drawLogic";
 import React, { useEffect, useRef, useState } from "react";
 import Canvas from "./Canvas";
 
