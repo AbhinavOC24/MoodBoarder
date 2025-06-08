@@ -1,66 +1,3 @@
-// import React from "react";
-// import IconButton from "./IconButton";
-// import {
-//   Square,
-//   Circle,
-//   MousePointer2,
-//   Pencil,
-//   Eraser,
-//   ArrowUpRight,
-//   Type,
-// } from "lucide-react";
-
-// function Toolbar({ changeShape, currShape }: ToolbarProps) {
-//   return (
-//     <div className="absolute top-0 left-0 flex flex-col gap-3 p-2">
-//       <IconButton
-//         Icon={<Square />}
-//         changeShape={changeShape}
-//         currShape={currShape}
-//         value="rect"
-//       />
-//       <IconButton
-//         Icon={<Circle />}
-//         changeShape={changeShape}
-//         currShape={currShape}
-//         value="circle"
-//       />
-//       <IconButton
-//         Icon={<MousePointer2 />}
-//         changeShape={changeShape}
-//         currShape={currShape}
-//         value="pointer"
-//       />
-//       <IconButton
-//         Icon={<Pencil />}
-//         changeShape={changeShape}
-//         currShape={currShape}
-//         value="pencil"
-//       />
-//       <IconButton
-//         Icon={<Eraser />}
-//         changeShape={changeShape}
-//         currShape={currShape}
-//         value="eraser"
-//       />
-//       <IconButton
-//         Icon={<ArrowUpRight />}
-//         changeShape={changeShape}
-//         currShape={currShape}
-//         value="arrow"
-//       />
-//       <IconButton
-//         Icon={<Type />}
-//         changeShape={changeShape}
-//         currShape={currShape}
-//         value="text"
-//       />
-//     </div>
-//   );
-// }
-
-// export default Toolbar;
-
 import type React from "react";
 import { useEffect, useState } from "react";
 import {
@@ -134,7 +71,7 @@ export default function Toolbar({ changeShape }: ToolbarProps) {
   }, [changeShape]);
   return (
     <div
-      className="absolute flex gap-2 bg-[#2D2D2D] p-2 rounded-lg shadow-lg"
+      className="absolute flex top-3 gap-2 bg-[#2D2D2D] p-2 rounded-lg shadow-lg"
       tabIndex={0}
     >
       {toolbarItems.map((item) => {
