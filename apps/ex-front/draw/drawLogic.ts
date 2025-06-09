@@ -6,12 +6,31 @@ import { Shape } from "../utils/types";
 import { drawArrow, intersectsEraser } from "../utils/drawUtils";
 import { getExistingShape } from "../utils/fetchShapes";
 import { clearCanvas } from "../utils/clearCanvas";
+function hexToRgba(hex: string, alpha: number): string {
+  let r = 255,
+    g = 255,
+    b = 255;
+  if (hex.startsWith("#")) {
+    const parsed = hex.slice(1);
+    if (parsed.length === 3) {
+      r = parseInt(parsed[0] + parsed[0], 16);
+      g = parseInt(parsed[1] + parsed[1], 16);
+      b = parseInt(parsed[2] + parsed[2], 16);
+    } else if (parsed.length === 6) {
+      r = parseInt(parsed.substring(0, 2), 16);
+      g = parseInt(parsed.substring(2, 4), 16);
+      b = parseInt(parsed.substring(4, 6), 16);
+    }
+  }
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 
 export async function initDraw(
   canvas: HTMLCanvasElement,
   roomId: string,
   socket: WebSocket,
-  ShapeRef: React.MutableRefObject<string>
+  ShapeRef: React.MutableRefObject<string>,
+  settings: any
 ) {
   const ctx = canvas.getContext("2d");
 
@@ -35,6 +54,8 @@ export async function initDraw(
       clearCanvas(existingShape, canvas, ctx);
     }
   };
+  const { textStrokeColor, textFontSize, textFontWeight, textAlign, opacity } =
+    settings;
 
   let existingShape: Shape[] = await getExistingShape(roomId);
   let deletedShape: Shape[] = [];
@@ -43,6 +64,7 @@ export async function initDraw(
   let start = false;
   let startX = 0;
   let startY = 0;
+
   clearCanvas(existingShape, canvas, ctx);
 
   canvas.addEventListener("mousedown", (e) => {
@@ -60,17 +82,24 @@ export async function initDraw(
       const canvasRect = canvas.getBoundingClientRect();
 
       const input = document.createElement("input");
+
+      // input.style.color = `${textStrokeColor}`;
+      input.style.fontSize = `${textFontSize || 16}px`;
+      input.style.fontWeight = textFontWeight || "normal";
+      input.style.textAlign = textAlign || "left";
+      const rgbaColor = hexToRgba(textStrokeColor, (opacity ?? 100) / 100);
+      input.style.color = rgbaColor;
+
       input.id = "canvas-text-input";
       input.style.position = "absolute";
       input.style.left = `${e.clientX}px`;
       input.style.top = `${e.clientY}px`;
       input.style.background = "transparent";
-      input.style.color = "white";
       input.style.border = "1px solid white";
       input.style.outline = "none";
       input.style.minWidth = "100px";
       input.style.fontFamily = "sans-serif";
-      input.style.fontSize = "16px";
+      input.style.fontStyle = "normal";
       input.style.padding = "4px";
       input.style.zIndex = "1000";
 

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 interface DrawingSettingsState {
+  // General Drawing
   strokeColor: string;
   setStrokeColorByIndex: (index: number) => void;
   setCustomStrokeColor: (color: string) => void;
@@ -17,6 +18,20 @@ interface DrawingSettingsState {
 
   opacity: number;
   setOpacity: (value: number) => void;
+
+  // Text Specific
+  textStrokeColor: string;
+  setTextStrokeColorByIndex: (index: number) => void;
+  setCustomTextStrokeColor: (color: string) => void;
+
+  textfontWeight: string;
+  settextfontWeight: (index: number) => void;
+
+  textFontSize: string;
+  setTextFontSize: (index: number) => void;
+
+  textAlign: string;
+  setTextAlign: (index: number) => void;
 }
 
 const strokeColors = [
@@ -37,91 +52,78 @@ const fillStyle = ["no fill", "solid"];
 
 const strokeWidth = [1, 2, 4];
 
-//   // Stroke
-//   strokeColor: strokeColors[0],
-//   setStrokeColorByIndex: (index: number) => {
-//     set({ strokeColor: strokeColors[index] });
-//     console.log(strokeColors);
-//   },
-//   setCustomStrokeColor: (color: string) => {
-//     set({ strokeColor: color });
-//     console.log(strokeColors);
-//   },
+const fontSizes = ["8", "12", "16", "20"];
+const fontStyle = ["Normal", "Bold"];
+const textAlignment = ["left", "center", "right"];
 
-//   // Background
-//   backgroundColor: backgroundColors[3],
-//   setBackgroundColorByIndex: (index: number) => {
-//     set({ backgroundColor: backgroundColors[index] });
-//     console.log(backgroundColors);
-//   },
-//   setCustomBackgroundColor: (color: string) => {
-//     set({ backgroundColor: color });
-//     console.log(backgroundColors);
-//   },
-
-//   // Fill
-//   fillStyle: fillStyle[0], // or "transparent" etc.
-//   setFillStyle: (index: number) => {
-//     set({ fillStyle: fillStyle[index] });
-//     console.log(fillStyle);
-//   },
-
-//   // Stroke width
-//   strokeWidth: strokeWidth[0],
-//   setStrokeWidth: (index: number) => {
-//     set({ strokeWidth: strokeWidth[index] });
-//     console.log(strokeWidth);
-//   },
-
-//   // Opacity
-//   opacity: 100,
-//   setOpacity: (value: number) => {
-//     set({ opacity: value });
-//   },
-// }));
 export const useDrawingSettings = create<DrawingSettingsState>((set, get) => ({
-  // Stroke
+  // General Drawing
   strokeColor: strokeColors[0],
-  setStrokeColorByIndex: (index: number) => {
-    const color = strokeColors[index];
-    set({ strokeColor: color });
-    console.log("✅ Stroke color set by index:", get().strokeColor);
+  backgroundColor: backgroundColors[3],
+  fillStyle: fillStyle[0],
+  strokeWidth: strokeWidth[0],
+  opacity: 100,
+
+  setStrokeColorByIndex: (index) => {
+    set({ strokeColor: strokeColors[index] });
+    console.log("✅ Stroke color set:", get().strokeColor);
   },
-  setCustomStrokeColor: (color: string) => {
+  setCustomStrokeColor: (color) => {
     set({ strokeColor: color });
     console.log("✅ Custom stroke color set:", get().strokeColor);
   },
 
-  // Background
-  backgroundColor: backgroundColors[3],
-  setBackgroundColorByIndex: (index: number) => {
-    const color = backgroundColors[index];
-    set({ backgroundColor: color });
-    console.log("✅ Background color set by index:", get().backgroundColor);
+  setBackgroundColorByIndex: (index) => {
+    set({ backgroundColor: backgroundColors[index] });
+    console.log("✅ Background color set:", get().backgroundColor);
   },
-  setCustomBackgroundColor: (color: string) => {
+  setCustomBackgroundColor: (color) => {
     set({ backgroundColor: color });
     console.log("✅ Custom background color set:", get().backgroundColor);
   },
 
-  // Fill
-  fillStyle: fillStyle[0],
-  setFillStyle: (index: number) => {
+  setFillStyle: (index) => {
     set({ fillStyle: fillStyle[index] });
     console.log("✅ Fill style set:", get().fillStyle);
   },
 
-  // Stroke width
-  strokeWidth: strokeWidth[0],
-  setStrokeWidth: (index: number) => {
+  setStrokeWidth: (index) => {
     set({ strokeWidth: strokeWidth[index] });
     console.log("✅ Stroke width set:", get().strokeWidth);
   },
 
-  // Opacity
-  opacity: 100,
-  setOpacity: (value: number) => {
+  setOpacity: (value) => {
     set({ opacity: value });
     console.log("✅ Opacity set:", get().opacity);
+  },
+
+  // Text-Specific Drawing
+  textStrokeColor: strokeColors[0],
+  textfontWeight: fontStyle[0],
+  textAlign: textAlignment[0],
+  textFontSize: fontSizes[0],
+
+  setTextStrokeColorByIndex: (index) => {
+    set({ textStrokeColor: strokeColors[index] });
+    console.log("📝 Text stroke color set:", get().textStrokeColor);
+  },
+  setCustomTextStrokeColor: (color) => {
+    set({ textStrokeColor: color });
+    console.log("📝 Custom text stroke color set:", get().textStrokeColor);
+  },
+
+  settextfontWeight: (index) => {
+    set({ textfontWeight: fontStyle[index] });
+    console.log("📝 Font weight set:", get().textfontWeight);
+  },
+
+  setTextFontSize: (index) => {
+    set({ textFontSize: fontSizes[index] });
+    console.log("📝 Font size set:", get().textFontSize);
+  },
+
+  setTextAlign: (index) => {
+    set({ textAlign: textAlignment[index] });
+    console.log("📝 Text align set:", get().textAlign);
   },
 }));
