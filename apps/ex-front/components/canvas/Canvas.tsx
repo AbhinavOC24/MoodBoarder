@@ -5,7 +5,6 @@ import React, { useEffect, useRef, useState } from "react";
 import Toolbar from "./Toolbar";
 import {
   DrawingSettingsSidebar,
-  OldDrawingSettingSidebar,
   TextDrawingSettingsSidebar,
 } from "./StyleOptions";
 import { useDrawingSettings } from "@/stores/StyleOptionStore";
@@ -47,7 +46,14 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
 
   useEffect(() => {
     if (canvasRef.current) {
-      initDraw(canvasRef.current, roomId, socket, shapeRef, drawingSettings);
+      initDraw(
+        canvasRef.current,
+        roomId,
+        socket,
+        shapeRef,
+        drawingSettings,
+        handleClick
+      );
     }
   }, [canvasRef, drawingSettings]);
 

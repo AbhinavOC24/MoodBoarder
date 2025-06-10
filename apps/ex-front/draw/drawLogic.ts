@@ -30,7 +30,8 @@ export async function initDraw(
   roomId: string,
   socket: WebSocket,
   ShapeRef: React.MutableRefObject<string>,
-  settings: any
+  settings: any,
+  handleClick: (currShape: string) => void
 ) {
   const ctx = canvas.getContext("2d");
 
@@ -54,8 +55,6 @@ export async function initDraw(
       clearCanvas(existingShape, canvas, ctx);
     }
   };
-  const { textStrokeColor, textFontSize, textFontWeight, textAlign, opacity } =
-    settings;
 
   let existingShape: Shape[] = await getExistingShape(roomId);
   let deletedShape: Shape[] = [];
@@ -82,7 +81,15 @@ export async function initDraw(
       const canvasRect = canvas.getBoundingClientRect();
 
       const input = document.createElement("input");
+      const {
+        textStrokeColor,
+        textFontSize,
+        textFontWeight,
+        textAlign,
+        opacity,
+      } = settings;
 
+      console.log("from drawlogic", textFontWeight);
       // input.style.color = `${textStrokeColor}`;
       input.style.fontSize = `${textFontSize || 16}px`;
       input.style.fontWeight = textFontWeight || "normal";
@@ -114,13 +121,17 @@ export async function initDraw(
         // First, reset the drawing state
         start = false;
 
-        if (input.value.trim()) {
+        if (input.value.trim() && !completed) {
           const shape: Shape = {
             type: "text",
             x: e.clientX - canvasRect.left,
-            y: e.clientY - canvasRect.top + 16,
+            y: e.clientY - canvasRect.top + parseInt(textFontSize),
             text: input.value,
-            fontSize: 16,
+            fontSize: textFontSize,
+            textFontWeight,
+            textAlign,
+            textStrokeColor,
+            opacity,
             shapeId: uuidv4(),
           };
 
@@ -137,9 +148,9 @@ export async function initDraw(
         if (input.parentNode && !completed) {
           completed = true;
           input.parentNode.removeChild(input);
-
-          clearCanvas(existingShape, canvas, ctx);
         }
+        clearCanvas(existingShape, canvas, ctx);
+        handleClick("pointer");
       };
 
       input.addEventListener("blur", handleComplete);

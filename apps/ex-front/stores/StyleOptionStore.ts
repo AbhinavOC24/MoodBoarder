@@ -24,8 +24,8 @@ interface DrawingSettingsState {
   setTextStrokeColorByIndex: (index: number) => void;
   setCustomTextStrokeColor: (color: string) => void;
 
-  textfontWeight: string;
-  settextfontWeight: (index: number) => void;
+  textFontWeight: string;
+  setTextFontWeight: (index: number) => void;
 
   textFontSize: string;
   setTextFontSize: (index: number) => void;
@@ -52,8 +52,8 @@ const fillStyle = ["no fill", "solid"];
 
 const strokeWidth = [1, 2, 4];
 
-const fontSizes = ["8", "12", "16", "20"];
-const fontStyle = ["Normal", "Bold"];
+const fontSizes = ["8", "12", "16", "60"];
+const fontStyle = ["normal", "bold"];
 const textAlignment = ["left", "center", "right"];
 
 export const useDrawingSettings = create<DrawingSettingsState>((set, get) => ({
@@ -99,7 +99,7 @@ export const useDrawingSettings = create<DrawingSettingsState>((set, get) => ({
 
   // Text-Specific Drawing
   textStrokeColor: strokeColors[0],
-  textfontWeight: fontStyle[0],
+  textFontWeight: fontStyle[0],
   textAlign: textAlignment[0],
   textFontSize: fontSizes[0],
 
@@ -112,9 +112,9 @@ export const useDrawingSettings = create<DrawingSettingsState>((set, get) => ({
     console.log("📝 Custom text stroke color set:", get().textStrokeColor);
   },
 
-  settextfontWeight: (index) => {
-    set({ textfontWeight: fontStyle[index] });
-    console.log("📝 Font weight set:", get().textfontWeight);
+  setTextFontWeight: (index) => {
+    set({ textFontWeight: fontStyle[index] });
+    console.log("📝 Font weight set:", get().textFontWeight);
   },
 
   setTextFontSize: (index) => {

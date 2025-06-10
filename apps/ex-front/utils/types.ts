@@ -38,5 +38,9 @@ export type Shape =
       y: number;
       text: string;
       fontSize?: number;
+      textFontWeight: string;
+      textAlign: string;
+      textStrokeColor: string;
+      opacity: number;
       shapeId: string;
     };

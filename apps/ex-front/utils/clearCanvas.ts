@@ -1,5 +1,23 @@
 import { Shape } from "./types";
 import { drawArrow } from "./drawUtils";
+function hexToRgba(hex: string, alpha: number): string {
+  let r = 255,
+    g = 255,
+    b = 255;
+  if (hex.startsWith("#")) {
+    const parsed = hex.slice(1);
+    if (parsed.length === 3) {
+      r = parseInt(parsed[0] + parsed[0], 16);
+      g = parseInt(parsed[1] + parsed[1], 16);
+      b = parseInt(parsed[2] + parsed[2], 16);
+    } else if (parsed.length === 6) {
+      r = parseInt(parsed.substring(0, 2), 16);
+      g = parseInt(parsed.substring(2, 4), 16);
+      b = parseInt(parsed.substring(4, 6), 16);
+    }
+  }
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 
 export function clearCanvas(
   existingShape: Shape[],
@@ -55,8 +73,13 @@ export function clearCanvas(
       ctx.lineWidth = 1;
     }
     if (shape.type == "text") {
-      ctx.fillStyle = "rgb(255,255,255)";
-      ctx.font = `${shape.fontSize || 16}px sans-serif`;
+      ctx.fillStyle = hexToRgba(shape.textStrokeColor, shape.opacity);
+
+      const fontWeight = shape.textFontWeight || "not defin";
+      console.log("from clear canvas", fontWeight);
+      ctx.font = `${fontWeight} ${shape.fontSize}px sans-serif`;
+
+      ctx.textAlign = (shape.textAlign || "left") as CanvasTextAlign;
       ctx.fillText(shape.text, shape.x, shape.y);
     }
   });

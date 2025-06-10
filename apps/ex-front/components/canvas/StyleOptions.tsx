@@ -199,8 +199,8 @@ export function TextDrawingSettingsSidebar() {
     textStrokeColor,
     setTextStrokeColorByIndex,
     setCustomTextStrokeColor,
-    textfontWeight,
-    settextfontWeight,
+    textFontWeight,
+    setTextFontWeight,
     textFontSize,
     setTextFontSize,
     textAlign,
@@ -211,7 +211,9 @@ export function TextDrawingSettingsSidebar() {
 
   const strokeColors = ["#ffffff", "#d1d5db", "#f87171", "#60a5fa"];
   const fontSizes = ["S", "M", "L", "XL"];
-  const fontStyles = ["Normal", "Bold", "Serif"];
+  const fontSizeValues = ["8", "12", "16", "60"];
+
+  const fontStyles = ["normal", "bold", "Serif"];
   const textAlignment = ["left", "center", "right"];
 
   return (
@@ -258,17 +260,17 @@ export function TextDrawingSettingsSidebar() {
           {fontStyles.map((style, index) => (
             <button
               key={index}
-              onClick={() => settextfontWeight(index)}
+              onClick={() => setTextFontWeight(index)}
               className={`w-8 h-8 rounded-md border ${
-                textfontWeight === fontStyles[index]
+                textFontWeight === fontStyles[index]
                   ? "border-white bg-indigo-600"
                   : "border-gray-600 bg-gray-700"
               } flex items-center justify-center ${
                 style === "serif" ? "font-serif" : ""
               }`}
             >
-              {style === "Normal" && <Type size={14} />}
-              {style === "Bold" && <Bold size={14} />}
+              {style === "normal" && <Type size={14} />}
+              {style === "bold" && <Bold size={14} />}
               {style === "Serif" && (
                 <span className="text-xs font-bold ">A</span>
               )}
@@ -286,12 +288,12 @@ export function TextDrawingSettingsSidebar() {
               key={index}
               onClick={() => setTextFontSize(index)}
               className={`w-8 h-8 rounded-md border ${
-                textFontSize === fontSizes[index]
+                textFontSize === fontSizeValues[index]
                   ? "border-white bg-indigo-600"
                   : "border-gray-600 bg-gray-700"
               } flex items-center justify-center text-xs font-medium`}
             >
-              {size}
+              {fontSizes[index]}
             </button>
           ))}
         </div>
