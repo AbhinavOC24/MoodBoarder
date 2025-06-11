@@ -6,6 +6,10 @@ import { Shape } from "../utils/types";
 import { drawArrow, intersectsEraser } from "../utils/drawUtils";
 import { getExistingShape } from "../utils/fetchShapes";
 import { clearCanvas } from "../utils/clearCanvas";
+
+// Add this flag outside the initDraw function to track active text input
+let activeTextInput: HTMLInputElement | null = null;
+
 function hexToRgba(hex: string, alpha: number): string {
   let r = 255,
     g = 255,
@@ -66,7 +70,96 @@ export async function initDraw(
 
   clearCanvas(existingShape, canvas, ctx);
 
+  // Function to complete text input
+
+  // Function to cancel text input
+  function cancelTextInput() {
+    if (!ctx) return;
+    if (!activeTextInput) return;
+
+    if (activeTextInput.parentNode) {
+      activeTextInput.parentNode.removeChild(activeTextInput);
+    }
+    activeTextInput = null;
+    start = false;
+
+    // Redraw canvas
+    clearCanvas(existingShape, canvas, ctx);
+  }
+
   canvas.addEventListener("mousedown", (e) => {
+    function completeTextInput() {
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      if (!activeTextInput) return;
+
+      const input = activeTextInput;
+      const inputValue = input.value.trim();
+
+      if (inputValue) {
+        const canvasRect = canvas.getBoundingClientRect();
+        const {
+          textStrokeColor,
+          textFontSize,
+          textFontWeight,
+          textAlign,
+          opacity,
+        } = settings;
+
+        // Calculate text position
+        const boxWidth = input.getBoundingClientRect().width;
+        ctx.font = `${textFontWeight || "normal"} ${textFontSize || 16}px sans-serif`;
+        const textWidth = ctx.measureText(inputValue).width;
+
+        let x = parseInt(input.style.left) - canvasRect.left;
+        let y = e.clientY - canvasRect.top;
+
+        if (textAlign === "right") {
+          x = x + (boxWidth - textWidth);
+        } else if (textAlign === "center") {
+          x = x + (boxWidth - textWidth) / 2;
+        }
+
+        const shape: Shape = {
+          type: "text",
+          x,
+          y,
+          text: inputValue,
+          fontSize: textFontSize,
+          textFontWeight,
+          textAlign,
+          textStrokeColor,
+          opacity,
+          shapeId: uuidv4(),
+        };
+
+        existingShape.push(shape);
+
+        // Send to socket
+        socket.send(
+          JSON.stringify({
+            type: "chat",
+            message: JSON.stringify({ shape }),
+            roomId,
+          })
+        );
+      }
+
+      // Clean up input
+      if (input.parentNode) {
+        input.parentNode.removeChild(input);
+      }
+      activeTextInput = null;
+      start = false;
+
+      // Redraw canvas
+      clearCanvas(existingShape, canvas, ctx);
+    }
+    // If there's already an active text input, complete it first
+    if (activeTextInput) {
+      completeTextInput();
+    }
+
     start = true;
     startX = e.clientX;
     startY = e.clientY;
@@ -78,8 +171,6 @@ export async function initDraw(
       eraserPoints = [{ x: startX, y: startY }];
     }
     if (ShapeRef.current === "text") {
-      // clearCanvas(existingShape, canvas, ctx);
-
       const canvasRect = canvas.getBoundingClientRect();
 
       const input = document.createElement("input");
@@ -91,8 +182,10 @@ export async function initDraw(
         opacity,
       } = settings;
 
-      // console.log("from drawlogic", textFontWeight);
-      // input.style.color = `${textStrokeColor}`;
+      // Store reference to active input
+      activeTextInput = input;
+
+      // Input styling
       input.style.fontSize = `${textFontSize || 16}px`;
       input.style.fontWeight = textFontWeight || "normal";
       input.style.textAlign = textAlign || "left";
@@ -103,79 +196,48 @@ export async function initDraw(
       input.style.position = "absolute";
       input.style.left = `${e.clientX}px`;
       input.style.top = `${e.clientY}px`;
-      // input.style.background = "transparent";
       input.style.border = "1px solid white";
-      // input.style.outline = "none";
       input.style.minWidth = "100px";
       input.style.fontFamily = "sans-serif";
       input.style.fontStyle = "normal";
       input.style.padding = "4px";
-
-      input.style.background = "rgba(255, 0, 0, 0.2)";
+      input.style.background = "transparent";
       input.style.zIndex = "9999999";
-      input.style.outline = "1px solid red";
+      input.style.outline = "1px solid #007bff";
+      input.style.borderRadius = "3px";
 
       document.body.appendChild(input);
 
+      // Focus after a small delay
       setTimeout(() => {
         input.focus();
+        input.select();
       }, 10);
 
-      let completed = false;
-      const handleComplete = () => {
-        // First, reset the drawing state
-        start = false;
-
-        if (input.value.trim() && !completed) {
-          const boxWidth = input.getBoundingClientRect().width;
-          const textWidth = ctx.measureText(input.value).width;
-
-          let x = e.clientX - canvasRect.left;
-          if (textAlign === "right") {
-            x = x + (boxWidth - textWidth);
-          } else if (textAlign === "center") {
-            x = x + (boxWidth - textWidth) / 2;
-          }
-          ctx.textBaseline = "top";
-
-          const shape: Shape = {
-            type: "text",
-            x,
-            y: e.clientY - canvasRect.top,
-            text: input.value,
-            fontSize: textFontSize,
-            textFontWeight,
-            textAlign,
-            textStrokeColor,
-            opacity,
-            shapeId: uuidv4(),
-          };
-          existingShape.push(shape);
-
-          socket.send(
-            JSON.stringify({
-              type: "chat",
-              message: JSON.stringify({ shape }),
-              roomId,
-            })
-          );
-        }
-
-        if (input.parentNode && !completed) {
-          completed = true;
-          input.parentNode.removeChild(input);
-        }
-
-        clearCanvas(existingShape, canvas, ctx);
-      };
-
-      input.addEventListener("blur", handleComplete);
-      input.addEventListener("keydown", (e) => {
+      // Event listeners for completion
+      const handleKeydown = (e: KeyboardEvent) => {
         if (e.key === "Enter") {
           e.preventDefault();
-          handleComplete();
+          e.stopPropagation();
+          completeTextInput();
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          e.stopPropagation();
+          cancelTextInput();
         }
-      });
+      };
+
+      const handleBlur = (e: FocusEvent) => {
+        // Small delay to prevent immediate blur when clicking on canvas
+        setTimeout(() => {
+          if (activeTextInput === input) {
+            completeTextInput();
+          }
+        }, 100);
+      };
+
+      input.addEventListener("keydown", handleKeydown);
+      input.addEventListener("blur", handleBlur);
     }
   });
 
@@ -221,15 +283,6 @@ export async function initDraw(
           return !intersect;
         });
         clearCanvas(existingShape, canvas, ctx);
-        // ctx.strokeStyle = "rgb(0,0,0)";
-        // ctx.lineWidth = 30;
-        // ctx.beginPath();
-        // ctx.moveTo(eraserPoints[0].x, eraserPoints[0].y);
-        // for (let i = 1; i < eraserPoints.length; i++) {
-        //   ctx.lineTo(eraserPoints[i].x, eraserPoints[i].y);
-        // }
-        // ctx.stroke();
-        // ctx.lineWidth = 1;
       } else if (ShapeRef.current === "arrow") {
         clearCanvas(existingShape, canvas, ctx);
         ctx.strokeStyle = "rgb(255,255,255)";
@@ -239,6 +292,7 @@ export async function initDraw(
       }
     }
   });
+
   let shape: Shape;
   canvas.addEventListener("mouseup", (e) => {
     start = false;
@@ -300,12 +354,6 @@ export async function initDraw(
         })
       );
     } else if (ShapeRef.current === "eraser") {
-      // const shape: Shape = {
-      //   type: "eraser",
-      //   points: eraserPoints,
-      // };
-      // existingShape.push(shape);
-
       socket.send(
         JSON.stringify({
           type: "deleted",
