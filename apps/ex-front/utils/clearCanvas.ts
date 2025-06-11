@@ -24,6 +24,7 @@ export function clearCanvas(
   canvas: HTMLCanvasElement,
   ctx: CanvasRenderingContext2D
 ) {
+  // console.log("Existing shape from clear canvas", existingShape);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "rgb(0,0,0)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -73,13 +74,16 @@ export function clearCanvas(
       ctx.lineWidth = 1;
     }
     if (shape.type == "text") {
-      ctx.fillStyle = hexToRgba(shape.textStrokeColor, shape.opacity);
+      ctx.fillStyle = hexToRgba(shape.textStrokeColor, shape.opacity / 100);
 
-      const fontWeight = shape.textFontWeight || "not defin";
-      console.log("from clear canvas", fontWeight);
+      const fontWeight = shape.textFontWeight || "normal";
+
       ctx.font = `${fontWeight} ${shape.fontSize}px sans-serif`;
 
-      ctx.textAlign = (shape.textAlign || "left") as CanvasTextAlign;
+      // console.log("from clear canvas", shape.textAlign); fixed
+
+      ctx.textAlign = (shape.textAlign ?? "left") as CanvasTextAlign;
+
       ctx.fillText(shape.text, shape.x, shape.y);
     }
   });

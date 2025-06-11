@@ -78,6 +78,8 @@ export async function initDraw(
       eraserPoints = [{ x: startX, y: startY }];
     }
     if (ShapeRef.current === "text") {
+      // clearCanvas(existingShape, canvas, ctx);
+
       const canvasRect = canvas.getBoundingClientRect();
 
       const input = document.createElement("input");
@@ -89,7 +91,7 @@ export async function initDraw(
         opacity,
       } = settings;
 
-      console.log("from drawlogic", textFontWeight);
+      // console.log("from drawlogic", textFontWeight);
       // input.style.color = `${textStrokeColor}`;
       input.style.fontSize = `${textFontSize || 16}px`;
       input.style.fontWeight = textFontWeight || "normal";
@@ -101,14 +103,17 @@ export async function initDraw(
       input.style.position = "absolute";
       input.style.left = `${e.clientX}px`;
       input.style.top = `${e.clientY}px`;
-      input.style.background = "transparent";
+      // input.style.background = "transparent";
       input.style.border = "1px solid white";
-      input.style.outline = "none";
+      // input.style.outline = "none";
       input.style.minWidth = "100px";
       input.style.fontFamily = "sans-serif";
       input.style.fontStyle = "normal";
       input.style.padding = "4px";
-      input.style.zIndex = "1000";
+
+      input.style.background = "rgba(255, 0, 0, 0.2)";
+      input.style.zIndex = "9999999";
+      input.style.outline = "1px solid red";
 
       document.body.appendChild(input);
 
@@ -122,10 +127,21 @@ export async function initDraw(
         start = false;
 
         if (input.value.trim() && !completed) {
+          const boxWidth = input.getBoundingClientRect().width;
+          const textWidth = ctx.measureText(input.value).width;
+
+          let x = e.clientX - canvasRect.left;
+          if (textAlign === "right") {
+            x = x + (boxWidth - textWidth);
+          } else if (textAlign === "center") {
+            x = x + (boxWidth - textWidth) / 2;
+          }
+          ctx.textBaseline = "top";
+
           const shape: Shape = {
             type: "text",
-            x: e.clientX - canvasRect.left,
-            y: e.clientY - canvasRect.top + parseInt(textFontSize),
+            x,
+            y: e.clientY - canvasRect.top,
             text: input.value,
             fontSize: textFontSize,
             textFontWeight,
@@ -134,8 +150,8 @@ export async function initDraw(
             opacity,
             shapeId: uuidv4(),
           };
-
           existingShape.push(shape);
+
           socket.send(
             JSON.stringify({
               type: "chat",
@@ -149,8 +165,8 @@ export async function initDraw(
           completed = true;
           input.parentNode.removeChild(input);
         }
+
         clearCanvas(existingShape, canvas, ctx);
-        handleClick("pointer");
       };
 
       input.addEventListener("blur", handleComplete);
