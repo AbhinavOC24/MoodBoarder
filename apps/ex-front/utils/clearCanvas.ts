@@ -24,7 +24,6 @@ export function clearCanvas(
   canvas: HTMLCanvasElement,
   ctx: CanvasRenderingContext2D
 ) {
-  // console.log("Existing shape from clear canvas", existingShape);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "rgb(0,0,0)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -47,39 +46,43 @@ export function clearCanvas(
       ctx.globalAlpha = (opacity ?? 100) / 100;
       if (fillStyle === "fill") {
         ctx.fillStyle = backgroundColor;
-        // console.log(backgroundColor);
+
         ctx.fillRect(x, y, width, height);
         ctx.strokeRect(x, y, width, height);
       } else {
         ctx.strokeRect(x, y, width, height);
       }
       ctx.globalAlpha = 1.0;
-      // console.log("New rect shape from clearCanvas", shape);
 
       // ctx.strokeStyle = "rgb(255,255,255)";
       // ctx?.strokeRect(shape.x, shape.y, shape.width, shape.height);
     }
     if (shape.type == "circle") {
-      ctx.strokeStyle = "rgb(255,255,255)";
+      ctx.lineWidth = shape.strokeWidth;
+      ctx.strokeStyle = shape.strokeColor;
+      ctx.globalAlpha = (shape.opacity ?? 100) / 100;
+
       ctx.beginPath();
-      ctx?.arc(
-        shape.centerX,
-        shape.centerY,
-        shape.radius,
-        0,
-        2 * Math.PI,
-        false
-      );
+      ctx.arc(shape.centerX, shape.centerY, shape.radius, 0, 2 * Math.PI);
+
+      if (shape.fillStyle === "fill") {
+        ctx.fillStyle = shape.backgroundColor;
+        ctx.fill();
+      }
       ctx.stroke();
+      ctx.globalAlpha = 1.0;
     }
     if (shape.type == "pencil") {
-      ctx.strokeStyle = "rgb(255,255,255)";
+      ctx.lineWidth = shape.strokeWidth;
+      ctx.strokeStyle = shape.strokeColor;
+      ctx.globalAlpha = (shape.opacity ?? 100) / 100;
       ctx.beginPath();
       ctx.moveTo(shape.points[0].x, shape.points[0].y);
       for (let i = 1; i < shape.points.length; i++) {
         ctx.lineTo(shape.points[i].x, shape.points[i].y);
       }
       ctx.stroke();
+      ctx.globalAlpha = 1.0;
     }
     // if (shape.type == "eraser") {
     //   ctx.strokeStyle = "rgb(0,0,0)";
@@ -93,10 +96,13 @@ export function clearCanvas(
     //   ctx.lineWidth = 1;
     // }
     if (shape.type == "arrow") {
-      ctx.strokeStyle = "rgb(255,255,255)";
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = shape.strokeColor;
+      ctx.lineWidth = shape.strokeWidth;
+      ctx.globalAlpha = (shape.opacity ?? 100) / 100;
+
       drawArrow(ctx, shape.startX, shape.startY, shape.endX, shape.endY);
       ctx.lineWidth = 1;
+      ctx.globalAlpha = 1.0;
     }
     if (shape.type == "text") {
       ctx.fillStyle = hexToRgba(shape.textStrokeColor, shape.opacity / 100);
@@ -104,8 +110,6 @@ export function clearCanvas(
       const fontWeight = shape.textFontWeight || "normal";
 
       ctx.font = `${fontWeight} ${shape.fontSize}px sans-serif`;
-
-      // console.log("from clear canvas", shape.textAlign); fixed
 
       ctx.textAlign = (shape.textAlign ?? "left") as CanvasTextAlign;
 

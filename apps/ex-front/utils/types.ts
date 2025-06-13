@@ -20,12 +20,20 @@ export type Shape =
       radius: number;
       shapeId: string;
       createdAt: string;
+      strokeColor: string;
+      backgroundColor: string;
+      fillStyle: string;
+      strokeWidth: number;
+      opacity: number;
     }
   | {
       type: "pencil";
       points: { x: number; y: number }[];
       shapeId: string;
       createdAt: string;
+      strokeWidth: number;
+      strokeColor: string;
+      opacity: number;
     }
   | {
       type: "eraser";
@@ -40,6 +48,9 @@ export type Shape =
       endY: number;
       shapeId: string;
       createdAt: string;
+      strokeWidth: number;
+      strokeColor: string;
+      opacity: number;
     }
   | {
       type: "text";

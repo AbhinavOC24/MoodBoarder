@@ -14,6 +14,7 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const shapeRef = useRef("pointer");
   const drawingSettings = useDrawingSettings();
+  const settingsRef = useRef(drawingSettings);
   const [activeSidebar, setActiveSidebar] = useState<"drawing" | "text" | null>(
     null
   );
@@ -45,19 +46,22 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
   };
 
   useEffect(() => {
+    settingsRef.current = drawingSettings;
+  }, [drawingSettings]);
+  useEffect(() => {
     if (!canvasRef.current) return;
 
     let cleanupFn: (() => void) | undefined;
 
     const setup = async () => {
       if (!canvasRef.current) return;
-
+      console.log("got called");
       cleanupFn = await drawLogic(
         canvasRef.current,
         roomId,
         socket,
         shapeRef,
-        drawingSettings,
+        settingsRef,
         handleClick
       );
     };
@@ -65,9 +69,11 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
     setup();
 
     return () => {
+      console.log("cleanup trigger");
+
       cleanupFn?.(); // Call the actual cleanup function if it exists
     };
-  }, [drawingSettings]);
+  }, [canvasRef, roomId, socket]);
 
   return (
     <div

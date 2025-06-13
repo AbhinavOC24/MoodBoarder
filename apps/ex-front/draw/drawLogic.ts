@@ -34,12 +34,17 @@ export async function drawLogic(
   roomId: string,
   socket: WebSocket,
   ShapeRef: React.MutableRefObject<string>,
-  settings: any,
+  settingsRef: React.MutableRefObject<any>,
   handleClick: (currShape: string) => void
 ) {
   const ctx = canvas.getContext("2d");
 
-  if (!ctx) return;
+  if (!ctx)
+    return () => {
+      canvas.removeEventListener("mousedown", handleMouseDown);
+      canvas.removeEventListener("mousemove", handleMouseMove);
+      canvas.removeEventListener("mouseup", handleMouseUp);
+    };
 
   socket.onmessage = (event) => {
     const message = JSON.parse(event.data);
@@ -51,7 +56,6 @@ export async function drawLogic(
     }
 
     if (message.type === "deleted") {
-      // console.log(message.message);
       const shapeIdsToDelete = message.message;
       existingShape = existingShape.filter(
         (shape) => !shapeIdsToDelete.includes(shape.shapeId)
@@ -67,20 +71,23 @@ export async function drawLogic(
   let start = false;
   let startX = 0;
   let startY = 0;
-  const {
-    textStrokeColor,
-    textFontSize,
-    textFontWeight,
-    textAlign,
-    opacity,
-    strokeColor,
-    backgroundColor,
-    fillStyle,
-    strokeWidth,
-  } = settings;
+
+  // Helper function to get current settings
+  const getCurrentSettings = () => settingsRef.current;
+
   function cancelTextInput() {
-    if (!ctx) return;
-    if (!activeTextInput) return;
+    if (!ctx)
+      return () => {
+        canvas.removeEventListener("mousedown", handleMouseDown);
+        canvas.removeEventListener("mousemove", handleMouseMove);
+        canvas.removeEventListener("mouseup", handleMouseUp);
+      };
+    if (!activeTextInput)
+      return () => {
+        canvas.removeEventListener("mousedown", handleMouseDown);
+        canvas.removeEventListener("mousemove", handleMouseMove);
+        canvas.removeEventListener("mouseup", handleMouseUp);
+      };
 
     if (activeTextInput.parentNode) {
       activeTextInput.parentNode.removeChild(activeTextInput);
@@ -91,39 +98,51 @@ export async function drawLogic(
     // Redraw canvas
     clearCanvas(existingShape, canvas, ctx);
   }
-  // clearCanvas(existingShape, canvas, ctx);
 
-  // Function to complete text input
-
-  // Function to cancel text input
   clearCanvas(existingShape, canvas, ctx);
 
   function handleMouseDown(e: MouseEvent) {
-    if (!ctx) return;
+    if (!ctx)
+      return () => {
+        canvas.removeEventListener("mousedown", handleMouseDown);
+        canvas.removeEventListener("mousemove", handleMouseMove);
+        canvas.removeEventListener("mouseup", handleMouseUp);
+      };
     clearCanvas(existingShape, canvas, ctx);
 
     function completeTextInput() {
       const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-      if (!activeTextInput) return;
+      if (!ctx)
+        return () => {
+          canvas.removeEventListener("mousedown", handleMouseDown);
+          canvas.removeEventListener("mousemove", handleMouseMove);
+          canvas.removeEventListener("mouseup", handleMouseUp);
+        };
+      if (!activeTextInput)
+        return () => {
+          canvas.removeEventListener("mousedown", handleMouseDown);
+          canvas.removeEventListener("mousemove", handleMouseMove);
+          canvas.removeEventListener("mouseup", handleMouseUp);
+        };
 
       const input = activeTextInput;
       const inputValue = input.value.trim();
 
       if (inputValue) {
         const canvasRect = canvas.getBoundingClientRect();
+        const settings = getCurrentSettings();
 
         // Calculate text position
         const boxWidth = input.getBoundingClientRect().width;
-        ctx.font = `${textFontWeight || "normal"} ${textFontSize || 16}px sans-serif`;
+        ctx.font = `${settings.textFontWeight || "normal"} ${settings.textFontSize || 16}px sans-serif`;
         const textWidth = ctx.measureText(inputValue).width;
 
         let x = parseInt(input.style.left) - canvasRect.left;
         let y = e.clientY - canvasRect.top;
 
-        if (textAlign === "right") {
+        if (settings.textAlign === "right") {
           x = x + (boxWidth - textWidth);
-        } else if (textAlign === "center") {
+        } else if (settings.textAlign === "center") {
           x = x + (boxWidth - textWidth) / 2;
         }
 
@@ -132,11 +151,11 @@ export async function drawLogic(
           x,
           y,
           text: inputValue,
-          fontSize: textFontSize,
-          textFontWeight,
-          textAlign,
-          textStrokeColor,
-          opacity,
+          fontSize: settings.textFontSize,
+          textFontWeight: settings.textFontWeight,
+          textAlign: settings.textAlign,
+          textStrokeColor: settings.textStrokeColor,
+          opacity: settings.opacity,
           shapeId: uuidv4(),
           createdAt: Date.now().toString(),
         };
@@ -163,6 +182,7 @@ export async function drawLogic(
       // Redraw canvas
       clearCanvas(existingShape, canvas, ctx);
     }
+
     // If there's already an active text input, complete it first
     if (activeTextInput) {
       completeTextInput();
@@ -180,24 +200,21 @@ export async function drawLogic(
     }
     if (ShapeRef.current === "text") {
       const canvasRect = canvas.getBoundingClientRect();
+      const settings = getCurrentSettings();
 
       const input = document.createElement("input");
-      const {
-        textStrokeColor,
-        textFontSize,
-        textFontWeight,
-        textAlign,
-        opacity,
-      } = settings;
 
       // Store reference to active input
       activeTextInput = input;
 
       // Input styling
-      input.style.fontSize = `${textFontSize || 16}px`;
-      input.style.fontWeight = textFontWeight || "normal";
-      input.style.textAlign = textAlign || "left";
-      const rgbaColor = hexToRgba(textStrokeColor, (opacity ?? 100) / 100);
+      input.style.fontSize = `${settings.textFontSize || 16}px`;
+      input.style.fontWeight = settings.textFontWeight || "normal";
+      input.style.textAlign = settings.textAlign || "left";
+      const rgbaColor = hexToRgba(
+        settings.textStrokeColor,
+        (settings.opacity ?? 100) / 100
+      );
       input.style.color = rgbaColor;
 
       input.id = "canvas-text-input";
@@ -250,47 +267,66 @@ export async function drawLogic(
   }
 
   function handleMouseMove(e: MouseEvent) {
-    if (!ctx) return;
+    if (!ctx)
+      return () => {
+        canvas.removeEventListener("mousedown", handleMouseDown);
+        canvas.removeEventListener("mousemove", handleMouseMove);
+        canvas.removeEventListener("mouseup", handleMouseUp);
+      };
+
+    const settings = getCurrentSettings();
     const width = e.clientX - startX;
     const height = e.clientY - startY;
+
     if (start) {
       if (ShapeRef.current === "rect") {
         clearCanvas(existingShape, canvas, ctx);
-        ctx.lineWidth = strokeWidth;
-        ctx.strokeStyle = strokeColor;
-        ctx.globalAlpha = (opacity ?? 100) / 100;
-        if (fillStyle === "fill") {
-          ctx.fillStyle = backgroundColor;
+        ctx.lineWidth = settings.strokeWidth;
+        ctx.strokeStyle = settings.strokeColor;
+        ctx.globalAlpha = (settings.opacity ?? 100) / 100;
+        if (settings.fillStyle === "fill") {
+          ctx.fillStyle = settings.backgroundColor;
           ctx.fillRect(startX, startY, width, height);
           ctx.strokeRect(startX, startY, width, height);
         } else {
           ctx.strokeRect(startX, startY, width, height);
         }
         ctx.globalAlpha = 1.0;
-
-        // ctx.strokeStyle = "rgb(255,255,255)";
-        // ctx?.strokeRect(startX, startY, width, height);
       } else if (ShapeRef.current === "circle") {
         clearCanvas(existingShape, canvas, ctx);
+        ctx.lineWidth = settings.strokeWidth;
+        ctx.strokeStyle = settings.strokeColor;
+        ctx.globalAlpha = (settings.opacity ?? 100) / 100;
+
         const centerX = startX + width / 2;
         const centerY = startY + height / 2;
         const radius = Math.sqrt(width ** 2 + height ** 2) / 2;
+
         ctx.beginPath();
-        ctx.strokeStyle = "rgb(255,255,255)";
         ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+
+        if (settings.fillStyle === "fill") {
+          ctx.fillStyle = settings.backgroundColor;
+          ctx.fill();
+        }
         ctx.stroke();
+        ctx.globalAlpha = 1.0;
       } else if (ShapeRef.current === "pointer") {
         clearCanvas(existingShape, canvas, ctx);
       } else if (ShapeRef.current === "pencil") {
         pencilPoints.push({ x: e.clientX, y: e.clientY });
         clearCanvas(existingShape, canvas, ctx);
-        ctx.strokeStyle = "rgb(255,255,255)";
+        ctx.lineWidth = settings.strokeWidth;
+        ctx.strokeStyle = settings.strokeColor;
+        ctx.globalAlpha = (settings.opacity ?? 100) / 100;
+
         ctx.beginPath();
         ctx.moveTo(pencilPoints[0].x, pencilPoints[0].y);
         for (let i = 1; i < pencilPoints.length; i++) {
           ctx.lineTo(pencilPoints[i].x, pencilPoints[i].y);
         }
         ctx.stroke();
+        ctx.globalAlpha = 1.0;
       } else if (ShapeRef.current === "eraser") {
         const newPoint = { x: e.clientX, y: e.clientY };
         eraserPoints.push(newPoint);
@@ -306,9 +342,11 @@ export async function drawLogic(
         clearCanvas(existingShape, canvas, ctx);
       } else if (ShapeRef.current === "arrow") {
         clearCanvas(existingShape, canvas, ctx);
-        ctx.strokeStyle = "rgb(255,255,255)";
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = settings.strokeColor;
+        ctx.lineWidth = settings.strokeWidth;
+        ctx.globalAlpha = (settings.opacity ?? 100) / 100;
         drawArrow(ctx, startX, startY, e.clientX, e.clientY);
+        ctx.globalAlpha = 1.0;
         ctx.lineWidth = 1;
       }
     }
@@ -318,9 +356,14 @@ export async function drawLogic(
     start = false;
     const width = e.clientX - startX;
     const height = e.clientY - startY;
+    const settings = getCurrentSettings();
 
     if (ShapeRef.current === "text") {
-      return;
+      return () => {
+        canvas.removeEventListener("mousedown", handleMouseDown);
+        canvas.removeEventListener("mousemove", handleMouseMove);
+        canvas.removeEventListener("mouseup", handleMouseUp);
+      };
     }
     if (ShapeRef.current === "rect") {
       const shape: Shape = {
@@ -329,15 +372,14 @@ export async function drawLogic(
         y: startY,
         width,
         height,
-        strokeColor,
-        backgroundColor,
-        fillStyle,
-        strokeWidth,
-        opacity,
+        strokeColor: settings.strokeColor,
+        backgroundColor: settings.backgroundColor,
+        fillStyle: settings.fillStyle,
+        strokeWidth: settings.strokeWidth,
+        opacity: settings.opacity,
         shapeId: uuidv4(),
         createdAt: Date.now().toString(),
       };
-      // console.log("New rect shape added", shape);
 
       existingShape.push(shape);
       socket.send(
@@ -357,6 +399,11 @@ export async function drawLogic(
         centerX: centerX,
         centerY: centerY,
         radius: radius,
+        strokeColor: settings.strokeColor,
+        backgroundColor: settings.backgroundColor,
+        fillStyle: settings.fillStyle,
+        strokeWidth: settings.strokeWidth,
+        opacity: settings.opacity,
         shapeId: uuidv4(),
         createdAt: Date.now().toString(),
       };
@@ -373,6 +420,9 @@ export async function drawLogic(
         type: "pencil",
         points: pencilPoints,
         shapeId: uuidv4(),
+        strokeColor: settings.strokeColor,
+        strokeWidth: settings.strokeWidth,
+        opacity: settings.opacity,
         createdAt: Date.now().toString(),
       };
       existingShape.push(shape);
@@ -400,6 +450,9 @@ export async function drawLogic(
         endX: e.clientX,
         endY: e.clientY,
         shapeId: uuidv4(),
+        strokeColor: settings.strokeColor,
+        strokeWidth: settings.strokeWidth,
+        opacity: settings.opacity,
         createdAt: Date.now().toString(),
       };
       existingShape.push(shape);
@@ -414,9 +467,7 @@ export async function drawLogic(
   }
 
   canvas.addEventListener("mousedown", handleMouseDown);
-
   canvas.addEventListener("mousemove", handleMouseMove);
-  let shape: Shape;
   canvas.addEventListener("mouseup", handleMouseUp);
 
   return () => {
