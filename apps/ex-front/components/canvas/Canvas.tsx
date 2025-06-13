@@ -1,6 +1,6 @@
 //actual canvas
 
-import { initDraw } from "@/draw/drawLogic";
+import { drawLogic } from "@/draw/drawLogic";
 import React, { useEffect, useRef, useState } from "react";
 import Toolbar from "./Toolbar";
 import {
@@ -45,8 +45,14 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
   };
 
   useEffect(() => {
-    if (canvasRef.current) {
-      initDraw(
+    if (!canvasRef.current) return;
+
+    let cleanupFn: (() => void) | undefined;
+
+    const setup = async () => {
+      if (!canvasRef.current) return;
+
+      cleanupFn = await drawLogic(
         canvasRef.current,
         roomId,
         socket,
@@ -54,8 +60,14 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
         drawingSettings,
         handleClick
       );
-    }
-  }, [canvasRef, drawingSettings]);
+    };
+
+    setup();
+
+    return () => {
+      cleanupFn?.(); // Call the actual cleanup function if it exists
+    };
+  }, [drawingSettings]);
 
   return (
     <div

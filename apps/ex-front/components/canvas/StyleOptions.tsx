@@ -137,7 +137,7 @@ export function DrawingSettingsSidebar() {
           <button
             onClick={() => setFillStyle(1)}
             className={`w-8 h-8 rounded-md border ${
-              fillStyle === "solid"
+              fillStyle === "fill"
                 ? "border-white bg-indigo-600"
                 : "border-gray-600 bg-gray-700"
             } flex items-center justify-center`}

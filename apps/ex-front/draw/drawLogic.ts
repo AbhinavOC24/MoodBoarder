@@ -29,7 +29,7 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-export async function initDraw(
+export async function drawLogic(
   canvas: HTMLCanvasElement,
   roomId: string,
   socket: WebSocket,
@@ -51,7 +51,7 @@ export async function initDraw(
     }
 
     if (message.type === "deleted") {
-      console.log(message.message);
+      // console.log(message.message);
       const shapeIdsToDelete = message.message;
       existingShape = existingShape.filter(
         (shape) => !shapeIdsToDelete.includes(shape.shapeId)
@@ -67,12 +67,17 @@ export async function initDraw(
   let start = false;
   let startX = 0;
   let startY = 0;
-
-  clearCanvas(existingShape, canvas, ctx);
-
-  // Function to complete text input
-
-  // Function to cancel text input
+  const {
+    textStrokeColor,
+    textFontSize,
+    textFontWeight,
+    textAlign,
+    opacity,
+    strokeColor,
+    backgroundColor,
+    fillStyle,
+    strokeWidth,
+  } = settings;
   function cancelTextInput() {
     if (!ctx) return;
     if (!activeTextInput) return;
@@ -86,8 +91,17 @@ export async function initDraw(
     // Redraw canvas
     clearCanvas(existingShape, canvas, ctx);
   }
+  // clearCanvas(existingShape, canvas, ctx);
 
-  canvas.addEventListener("mousedown", (e) => {
+  // Function to complete text input
+
+  // Function to cancel text input
+  clearCanvas(existingShape, canvas, ctx);
+
+  function handleMouseDown(e: MouseEvent) {
+    if (!ctx) return;
+    clearCanvas(existingShape, canvas, ctx);
+
     function completeTextInput() {
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
@@ -98,13 +112,6 @@ export async function initDraw(
 
       if (inputValue) {
         const canvasRect = canvas.getBoundingClientRect();
-        const {
-          textStrokeColor,
-          textFontSize,
-          textFontWeight,
-          textAlign,
-          opacity,
-        } = settings;
 
         // Calculate text position
         const boxWidth = input.getBoundingClientRect().width;
@@ -239,16 +246,29 @@ export async function initDraw(
       input.addEventListener("keydown", handleKeydown);
       input.addEventListener("blur", handleBlur);
     }
-  });
+  }
 
-  canvas.addEventListener("mousemove", (e) => {
+  function handleMouseMove(e: MouseEvent) {
+    if (!ctx) return;
     const width = e.clientX - startX;
     const height = e.clientY - startY;
     if (start) {
       if (ShapeRef.current === "rect") {
         clearCanvas(existingShape, canvas, ctx);
-        ctx.strokeStyle = "rgb(255,255,255)";
-        ctx?.strokeRect(startX, startY, width, height);
+        ctx.lineWidth = strokeWidth;
+        ctx.strokeStyle = strokeColor;
+        ctx.globalAlpha = (opacity ?? 100) / 100;
+        if (fillStyle === "fill") {
+          ctx.fillStyle = backgroundColor;
+          ctx.fillRect(startX, startY, width, height);
+          ctx.strokeRect(startX, startY, width, height);
+        } else {
+          ctx.strokeRect(startX, startY, width, height);
+        }
+        ctx.globalAlpha = 1.0;
+
+        // ctx.strokeStyle = "rgb(255,255,255)";
+        // ctx?.strokeRect(startX, startY, width, height);
       } else if (ShapeRef.current === "circle") {
         clearCanvas(existingShape, canvas, ctx);
         const centerX = startX + width / 2;
@@ -291,10 +311,9 @@ export async function initDraw(
         ctx.lineWidth = 1;
       }
     }
-  });
+  }
 
-  let shape: Shape;
-  canvas.addEventListener("mouseup", (e) => {
+  function handleMouseUp(e: MouseEvent) {
     start = false;
     const width = e.clientX - startX;
     const height = e.clientY - startY;
@@ -309,8 +328,15 @@ export async function initDraw(
         y: startY,
         width,
         height,
+        strokeColor,
+        backgroundColor,
+        fillStyle,
+        strokeWidth,
+        opacity,
         shapeId: uuidv4(),
       };
+      // console.log("New rect shape added", shape);
+
       existingShape.push(shape);
       socket.send(
         JSON.stringify({
@@ -380,5 +406,17 @@ export async function initDraw(
         })
       );
     }
-  });
+  }
+
+  canvas.addEventListener("mousedown", handleMouseDown);
+
+  canvas.addEventListener("mousemove", handleMouseMove);
+  let shape: Shape;
+  canvas.addEventListener("mouseup", handleMouseUp);
+
+  return () => {
+    canvas.removeEventListener("mousedown", handleMouseDown);
+    canvas.removeEventListener("mousemove", handleMouseMove);
+    canvas.removeEventListener("mouseup", handleMouseUp);
+  };
 }

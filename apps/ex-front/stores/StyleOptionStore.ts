@@ -3,20 +3,21 @@ import { create } from "zustand";
 interface DrawingSettingsState {
   // General Drawing
   strokeColor: string;
+  backgroundColor: string;
+  fillStyle: string;
+  strokeWidth: number;
+  opacity: number;
+
   setStrokeColorByIndex: (index: number) => void;
   setCustomStrokeColor: (color: string) => void;
 
-  backgroundColor: string;
   setBackgroundColorByIndex: (index: number) => void;
   setCustomBackgroundColor: (color: string) => void;
 
-  fillStyle: string;
   setFillStyle: (index: number) => void;
 
-  strokeWidth: number;
   setStrokeWidth: (index: number) => void;
 
-  opacity: number;
   setOpacity: (value: number) => void;
 
   // Text Specific
@@ -48,7 +49,7 @@ const backgroundColors = [
   "#15803d", // green-700
 ];
 
-const fillStyle = ["no fill", "solid"];
+const fillStyle = ["no fill", "fill"];
 
 const strokeWidth = [1, 2, 4];
 

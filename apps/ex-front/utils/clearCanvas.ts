@@ -28,11 +28,36 @@ export function clearCanvas(
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "rgb(0,0,0)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+  console.log(existingShape);
   existingShape.forEach((shape) => {
     if (shape.type === "rect") {
-      ctx.strokeStyle = "rgb(255,255,255)";
-      ctx?.strokeRect(shape.x, shape.y, shape.width, shape.height);
+      const {
+        strokeWidth,
+        strokeColor,
+        opacity,
+        fillStyle,
+        backgroundColor,
+        x,
+        y,
+        width,
+        height,
+      } = shape;
+      ctx.lineWidth = strokeWidth;
+      ctx.strokeStyle = strokeColor;
+      ctx.globalAlpha = (opacity ?? 100) / 100;
+      if (fillStyle === "fill") {
+        ctx.fillStyle = backgroundColor;
+        // console.log(backgroundColor);
+        ctx.fillRect(x, y, width, height);
+        ctx.strokeRect(x, y, width, height);
+      } else {
+        ctx.strokeRect(x, y, width, height);
+      }
+      ctx.globalAlpha = 1.0;
+      // console.log("New rect shape from clearCanvas", shape);
+
+      // ctx.strokeStyle = "rgb(255,255,255)";
+      // ctx?.strokeRect(shape.x, shape.y, shape.width, shape.height);
     }
     if (shape.type == "circle") {
       ctx.strokeStyle = "rgb(255,255,255)";

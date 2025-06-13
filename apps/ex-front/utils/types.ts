@@ -6,6 +6,11 @@ export type Shape =
       width: number;
       height: number;
       shapeId: string;
+      strokeColor: string;
+      backgroundColor: string;
+      fillStyle: string;
+      strokeWidth: number;
+      opacity: number;
     }
   | {
       type: "circle";
