@@ -10,5 +10,7 @@ export async function getExistingShape(roomId: string) {
     const messageData = JSON.parse(message.message);
     return messageData.shape;
   });
+  shapes.sort((a: any, b: any) => Number(a.createdAt) - Number(b.createdAt));
+
   return shapes;
 }

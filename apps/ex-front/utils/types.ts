@@ -11,6 +11,7 @@ export type Shape =
       fillStyle: string;
       strokeWidth: number;
       opacity: number;
+      createdAt: string;
     }
   | {
       type: "circle";
@@ -18,11 +19,13 @@ export type Shape =
       centerY: number;
       radius: number;
       shapeId: string;
+      createdAt: string;
     }
   | {
       type: "pencil";
       points: { x: number; y: number }[];
       shapeId: string;
+      createdAt: string;
     }
   | {
       type: "eraser";
@@ -36,6 +39,7 @@ export type Shape =
       endX: number;
       endY: number;
       shapeId: string;
+      createdAt: string;
     }
   | {
       type: "text";
@@ -48,4 +52,5 @@ export type Shape =
       textStrokeColor: string;
       opacity: number;
       shapeId: string;
+      createdAt: string;
     };

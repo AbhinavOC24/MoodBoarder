@@ -138,6 +138,7 @@ export async function drawLogic(
           textStrokeColor,
           opacity,
           shapeId: uuidv4(),
+          createdAt: Date.now().toString(),
         };
 
         existingShape.push(shape);
@@ -334,6 +335,7 @@ export async function drawLogic(
         strokeWidth,
         opacity,
         shapeId: uuidv4(),
+        createdAt: Date.now().toString(),
       };
       // console.log("New rect shape added", shape);
 
@@ -356,6 +358,7 @@ export async function drawLogic(
         centerY: centerY,
         radius: radius,
         shapeId: uuidv4(),
+        createdAt: Date.now().toString(),
       };
       existingShape.push(shape);
       socket.send(
@@ -370,6 +373,7 @@ export async function drawLogic(
         type: "pencil",
         points: pencilPoints,
         shapeId: uuidv4(),
+        createdAt: Date.now().toString(),
       };
       existingShape.push(shape);
       socket.send(
@@ -396,6 +400,7 @@ export async function drawLogic(
         endX: e.clientX,
         endY: e.clientY,
         shapeId: uuidv4(),
+        createdAt: Date.now().toString(),
       };
       existingShape.push(shape);
       socket.send(
