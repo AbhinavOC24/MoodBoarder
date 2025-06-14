@@ -12,6 +12,8 @@ import {
 import { useDrawingSettings } from "@/stores/StyleOptionStore";
 
 function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
+  const zoomRef = useRef(1);
+  const offsetRef = useRef({ x: 0, y: 0 });
   const [currShape, updateShape] = useState<string>("pointer");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const shapeRef = useRef("pointer");
@@ -72,7 +74,9 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
         socket,
         shapeRef,
         settingsRef,
-        handleClick
+        handleClick,
+        zoomRef,
+        offsetRef
       );
     };
 
@@ -84,6 +88,94 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
       cleanupFn?.(); // Call the actual cleanup function if it exists
     };
   }, [canvasRef, roomId, socket]);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let isDragging = false;
+    let lastX = 0;
+    let lastY = 0;
+
+    const draw = () => {
+      ctx.save();
+      ctx.setTransform(
+        zoomRef.current,
+        0,
+        0,
+        zoomRef.current,
+        offsetRef.current.x,
+        offsetRef.current.y
+      );
+      ctx.clearRect(
+        -offsetRef.current.x / zoomRef.current,
+        -offsetRef.current.y / zoomRef.current,
+        canvas.width / zoomRef.current,
+        canvas.height / zoomRef.current
+      );
+      // 🔴 Call your actual draw function here if needed
+      ctx.restore();
+    };
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+
+      const zoomIntensity = 0.1;
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      const currentZoom = zoomRef.current;
+      const newZoom =
+        e.deltaY < 0
+          ? currentZoom * (1 + zoomIntensity)
+          : currentZoom * (1 - zoomIntensity);
+      zoomRef.current = Math.max(0.1, Math.min(10, newZoom)); // clamp zoom
+
+      // Adjust pan offset to zoom around the cursor
+      offsetRef.current.x =
+        mouseX - ((mouseX - offsetRef.current.x) / currentZoom) * newZoom;
+      offsetRef.current.y =
+        mouseY - ((mouseY - offsetRef.current.y) / currentZoom) * newZoom;
+
+      draw();
+    };
+
+    const handleMouseDown = (e: MouseEvent) => {
+      isDragging = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      offsetRef.current.x += dx;
+      offsetRef.current.y += dy;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      draw();
+    };
+
+    const handleMouseUp = () => {
+      isDragging = false;
+    };
+
+    canvas.addEventListener("wheel", handleWheel, { passive: false });
+    canvas.addEventListener("mousedown", handleMouseDown);
+    canvas.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      canvas.removeEventListener("wheel", handleWheel);
+      canvas.removeEventListener("mousedown", handleMouseDown);
+      canvas.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, []);
 
   return (
     <div
