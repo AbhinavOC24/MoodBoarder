@@ -35,7 +35,12 @@ export async function drawLogic(
   socket: WebSocket,
   ShapeRef: React.MutableRefObject<string>,
   settingsRef: React.MutableRefObject<any>,
-  handleClick: (currShape: string) => void
+  handleClick: (currShape: string) => void,
+  zoomRef: React.RefObject<number>,
+  offsetRef: React.RefObject<{
+    x: number;
+    y: number;
+  }>
 ) {
   const ctx = canvas.getContext("2d");
 
@@ -52,7 +57,7 @@ export async function drawLogic(
     if (message.type === "chat") {
       const parsedShape = JSON.parse(message.message);
       existingShape.push(parsedShape.shape);
-      clearCanvas(existingShape, canvas, ctx);
+      clearCanvas(existingShape, canvas, ctx, zoomRef, offsetRef);
     }
 
     if (message.type === "deleted") {
@@ -60,7 +65,7 @@ export async function drawLogic(
       existingShape = existingShape.filter(
         (shape) => !shapeIdsToDelete.includes(shape.shapeId)
       );
-      clearCanvas(existingShape, canvas, ctx);
+      clearCanvas(existingShape, canvas, ctx, zoomRef, offsetRef);
     }
   };
 
@@ -96,10 +101,10 @@ export async function drawLogic(
     start = false;
 
     // Redraw canvas
-    clearCanvas(existingShape, canvas, ctx);
+    clearCanvas(existingShape, canvas, ctx, zoomRef, offsetRef);
   }
 
-  clearCanvas(existingShape, canvas, ctx);
+  clearCanvas(existingShape, canvas, ctx, zoomRef, offsetRef);
 
   function handleMouseDown(e: MouseEvent) {
     if (!ctx)
@@ -108,8 +113,16 @@ export async function drawLogic(
         canvas.removeEventListener("mousemove", handleMouseMove);
         canvas.removeEventListener("mouseup", handleMouseUp);
       };
-    clearCanvas(existingShape, canvas, ctx);
+    clearCanvas(existingShape, canvas, ctx, zoomRef, offsetRef);
 
+    ctx.setTransform(
+      zoomRef.current,
+      0,
+      0,
+      zoomRef.current,
+      offsetRef.current.x,
+      offsetRef.current.y
+    );
     function completeTextInput() {
       const ctx = canvas.getContext("2d");
       if (!ctx)
@@ -180,7 +193,7 @@ export async function drawLogic(
       start = false;
 
       // Redraw canvas
-      clearCanvas(existingShape, canvas, ctx);
+      clearCanvas(existingShape, canvas, ctx, zoomRef, offsetRef);
     }
 
     // If there's already an active text input, complete it first
@@ -273,14 +286,22 @@ export async function drawLogic(
         canvas.removeEventListener("mousemove", handleMouseMove);
         canvas.removeEventListener("mouseup", handleMouseUp);
       };
-
+    ctx.setTransform(
+      zoomRef.current,
+      0,
+      0,
+      zoomRef.current,
+      offsetRef.current.x,
+      offsetRef.current.y
+    );
     const settings = getCurrentSettings();
     const width = e.clientX - startX;
     const height = e.clientY - startY;
 
     if (start) {
       if (ShapeRef.current === "rect") {
-        clearCanvas(existingShape, canvas, ctx);
+        clearCanvas(existingShape, canvas, ctx, zoomRef, offsetRef);
+
         ctx.lineWidth = settings.strokeWidth;
         ctx.strokeStyle = settings.strokeColor;
         ctx.globalAlpha = (settings.opacity ?? 100) / 100;
@@ -293,7 +314,8 @@ export async function drawLogic(
         }
         ctx.globalAlpha = 1.0;
       } else if (ShapeRef.current === "circle") {
-        clearCanvas(existingShape, canvas, ctx);
+        clearCanvas(existingShape, canvas, ctx, zoomRef, offsetRef);
+
         ctx.lineWidth = settings.strokeWidth;
         ctx.strokeStyle = settings.strokeColor;
         ctx.globalAlpha = (settings.opacity ?? 100) / 100;
@@ -312,10 +334,11 @@ export async function drawLogic(
         ctx.stroke();
         ctx.globalAlpha = 1.0;
       } else if (ShapeRef.current === "pointer") {
-        clearCanvas(existingShape, canvas, ctx);
+        clearCanvas(existingShape, canvas, ctx, zoomRef, offsetRef);
       } else if (ShapeRef.current === "pencil") {
         pencilPoints.push({ x: e.clientX, y: e.clientY });
-        clearCanvas(existingShape, canvas, ctx);
+        clearCanvas(existingShape, canvas, ctx, zoomRef, offsetRef);
+
         ctx.lineWidth = settings.strokeWidth;
         ctx.strokeStyle = settings.strokeColor;
         ctx.globalAlpha = (settings.opacity ?? 100) / 100;
@@ -339,9 +362,10 @@ export async function drawLogic(
           }
           return !intersect;
         });
-        clearCanvas(existingShape, canvas, ctx);
+        clearCanvas(existingShape, canvas, ctx, zoomRef, offsetRef);
       } else if (ShapeRef.current === "arrow") {
-        clearCanvas(existingShape, canvas, ctx);
+        clearCanvas(existingShape, canvas, ctx, zoomRef, offsetRef);
+
         ctx.strokeStyle = settings.strokeColor;
         ctx.lineWidth = settings.strokeWidth;
         ctx.globalAlpha = (settings.opacity ?? 100) / 100;
@@ -358,6 +382,15 @@ export async function drawLogic(
     const height = e.clientY - startY;
     const settings = getCurrentSettings();
 
+    if (!ctx) return;
+    ctx.setTransform(
+      zoomRef.current,
+      0,
+      0,
+      zoomRef.current,
+      offsetRef.current.x,
+      offsetRef.current.y
+    );
     if (ShapeRef.current === "text") {
       return () => {
         canvas.removeEventListener("mousedown", handleMouseDown);

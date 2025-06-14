@@ -22,8 +22,21 @@ function hexToRgba(hex: string, alpha: number): string {
 export function clearCanvas(
   existingShape: Shape[],
   canvas: HTMLCanvasElement,
-  ctx: CanvasRenderingContext2D
+  ctx: CanvasRenderingContext2D,
+  zoomRef: React.RefObject<number>,
+  offsetRef: React.RefObject<{
+    x: number;
+    y: number;
+  }>
 ) {
+  ctx.setTransform(
+    zoomRef.current,
+    0,
+    0,
+    zoomRef.current,
+    offsetRef.current.x,
+    offsetRef.current.y
+  );
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "rgb(0,0,0)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
