@@ -6,8 +6,6 @@ import Toolbar from "./Toolbar";
 import {
   DrawingSettingsSidebar,
   TextDrawingSettingsSidebar,
-  ArrowSettingsSidebar,
-  PencilSettingsSidebar,
 } from "./StyleOptions";
 import { useDrawingSettings } from "@/stores/StyleOptionStore";
 
@@ -19,24 +17,20 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
   const shapeRef = useRef("pointer");
   const drawingSettings = useDrawingSettings();
   const settingsRef = useRef(drawingSettings);
-  const [activeSidebar, setActiveSidebar] = useState<
-    "drawing" | "text" | "arrow" | "pencil" | null
-  >(null);
+  const [activeSidebar, setActiveSidebar] = useState<"drawing" | "text" | null>(
+    null
+  );
 
   const handleClick = (currShape: string) => {
     shapeRef.current = currShape;
     updateShape(currShape);
 
-    const toolsWithDrawingStyle = ["rect", "circle"];
+    const toolsWithDrawingStyle = ["rect", "circle", "pencil", "arrow"];
 
     if (toolsWithDrawingStyle.includes(currShape)) {
       setActiveSidebar("drawing");
     } else if (currShape === "text") {
       setActiveSidebar("text");
-    } else if (currShape === "arrow") {
-      setActiveSidebar("arrow");
-    } else if (currShape === "pencil") {
-      setActiveSidebar("pencil");
     } else {
       setActiveSidebar(null);
     }
@@ -48,10 +42,6 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
         return <DrawingSettingsSidebar />;
       case "text":
         return <TextDrawingSettingsSidebar />;
-      case "arrow":
-        return <ArrowSettingsSidebar />;
-      case "pencil":
-        return <PencilSettingsSidebar />;
       default:
         return null;
     }
