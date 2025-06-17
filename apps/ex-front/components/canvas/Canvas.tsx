@@ -332,8 +332,8 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
       <Toolbar changeShape={handleClick} currShape={currShape} />
       <canvas
         ref={canvasRef}
-        width={10 * window.innerWidth}
-        height={10 * window.innerHeight}
+        width={window.innerWidth}
+        height={window.innerHeight}
       ></canvas>
     </div>
   );
