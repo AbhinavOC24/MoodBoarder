@@ -40,7 +40,8 @@ export async function drawLogic(
   offsetRef: React.RefObject<{
     x: number;
     y: number;
-  }>
+  }>,
+  existingShapesRef: React.MutableRefObject<any[]>
 ) {
   const ctx = canvas.getContext("2d");
 
@@ -70,6 +71,8 @@ export async function drawLogic(
   };
 
   let existingShape: Shape[] = await getExistingShape(roomId);
+  existingShapesRef.current = existingShape;
+
   let deletedShape: Shape[] = [];
   let pencilPoints: { x: number; y: number }[] = [];
   let eraserPoints: { x: number; y: number }[] = [];

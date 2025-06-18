@@ -2,6 +2,7 @@
 
 import { drawLogic } from "@/draw/drawLogic";
 import React, { useEffect, useRef, useState } from "react";
+import { clearCanvas } from "@/utils/clearCanvas";
 import Toolbar from "./Toolbar";
 import {
   DrawingSettingsSidebar,
@@ -16,6 +17,7 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
   const offsetRef = useRef({ x: 0, y: 0 });
   const [currShape, updateShape] = useState<string>("pointer");
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const existingShapesRef = useRef<any[]>([]);
 
   const shapeRef = useRef("pointer");
   const drawingSettings = useDrawingSettings();
@@ -121,17 +123,7 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
 
     const setup = async () => {
       if (!canvasRef.current) return;
-      console.log("got called");
-      cleanupFn = await drawLogic(
-        canvasRef.current,
-        roomId,
-        socket,
-        shapeRef,
-        settingsRef,
-        handleClick,
-        zoomRef,
-        offsetRef
-      );
+      clearCanvas(existingShapesRef.current, canvas, ctx, zoomRef, offsetRef);
     };
 
     setup();
@@ -174,7 +166,8 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
         settingsRef,
         handleClick,
         zoomRef,
-        offsetRef
+        offsetRef,
+        existingShapesRef
       );
     };
 
@@ -183,7 +176,7 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
     return () => {
       console.log("cleanup trigger");
 
-      cleanupFn?.(); // Call the actual cleanup function if it exists
+      cleanupFn?.();
     };
   }, [canvasRef, roomId, socket]);
 
