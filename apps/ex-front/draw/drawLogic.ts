@@ -41,7 +41,14 @@ export async function drawLogic(
     x: number;
     y: number;
   }>,
-  existingShapesRef: React.MutableRefObject<any[]>
+  existingShapesRef: React.MutableRefObject<any[]>,
+  getCanvasCordinates: (
+    e: MouseEvent,
+    canvas: HTMLCanvasElement
+  ) => {
+    x: number;
+    y: number;
+  }
 ) {
   const ctx = canvas.getContext("2d");
 
@@ -126,6 +133,8 @@ export async function drawLogic(
       offsetRef.current.x,
       offsetRef.current.y
     );
+    const coords = getCanvasCordinates(e, canvas);
+
     function completeTextInput() {
       const ctx = canvas.getContext("2d");
       if (!ctx)
@@ -164,8 +173,8 @@ export async function drawLogic(
 
         const shape: Shape = {
           type: "text",
-          x,
-          y,
+          x: coords.x,
+          y: coords.y,
           text: inputValue,
           fontSize: settings.textFontSize,
           textFontWeight: settings.textFontWeight,
@@ -205,14 +214,16 @@ export async function drawLogic(
     }
 
     start = true;
-    startX = e.clientX;
-    startY = e.clientY;
 
+    // startX = e.clientX;
+    // startY = e.clientY;
+    startX = coords.x;
+    startY = coords.y;
     if (ShapeRef.current === "pencil") {
-      pencilPoints = [{ x: startX, y: startY }];
+      pencilPoints = [{ x: coords.x, y: coords.y }];
     }
     if (ShapeRef.current === "eraser") {
-      eraserPoints = [{ x: startX, y: startY }];
+      eraserPoints = [{ x: coords.x, y: coords.y }];
     }
     if (ShapeRef.current === "text") {
       const canvasRect = canvas.getBoundingClientRect();
@@ -222,7 +233,7 @@ export async function drawLogic(
 
       // Store reference to active input
       activeTextInput = input;
-
+      const canvasCoords = getCanvasCordinates(e, canvas);
       // Input styling
       input.style.fontSize = `${settings.textFontSize || 16}px`;
       input.style.fontWeight = settings.textFontWeight || "normal";
@@ -298,9 +309,11 @@ export async function drawLogic(
       offsetRef.current.y
     );
     const settings = getCurrentSettings();
-    const width = e.clientX - startX;
-    const height = e.clientY - startY;
-
+    const coords = getCanvasCordinates(e, canvas);
+    // const width = e.clientX - startX;
+    // const height = e.clientY - startY;
+    const width = coords.x - startX;
+    const height = coords.y - startY;
     if (start) {
       if (ShapeRef.current === "rect") {
         clearCanvas(existingShape, canvas, ctx, zoomRef, offsetRef);
@@ -339,7 +352,7 @@ export async function drawLogic(
       } else if (ShapeRef.current === "pointer") {
         clearCanvas(existingShape, canvas, ctx, zoomRef, offsetRef);
       } else if (ShapeRef.current === "pencil") {
-        pencilPoints.push({ x: e.clientX, y: e.clientY });
+        pencilPoints.push({ x: coords.x, y: coords.y });
         clearCanvas(existingShape, canvas, ctx, zoomRef, offsetRef);
 
         ctx.lineWidth = settings.strokeWidth;
@@ -354,7 +367,7 @@ export async function drawLogic(
         ctx.stroke();
         ctx.globalAlpha = 1.0;
       } else if (ShapeRef.current === "eraser") {
-        const newPoint = { x: e.clientX, y: e.clientY };
+        const newPoint = { x: coords.x, y: coords.y };
         eraserPoints.push(newPoint);
 
         existingShape = existingShape.filter((shape) => {
@@ -372,7 +385,7 @@ export async function drawLogic(
         ctx.strokeStyle = settings.strokeColor;
         ctx.lineWidth = settings.strokeWidth;
         ctx.globalAlpha = (settings.opacity ?? 100) / 100;
-        drawArrow(ctx, startX, startY, e.clientX, e.clientY);
+        drawArrow(ctx, startX, startY, coords.x, coords.y);
         ctx.globalAlpha = 1.0;
         ctx.lineWidth = 1;
       }
@@ -381,8 +394,12 @@ export async function drawLogic(
 
   function handleMouseUp(e: MouseEvent) {
     start = false;
-    const width = e.clientX - startX;
-    const height = e.clientY - startY;
+
+    const coords = getCanvasCordinates(e, canvas);
+    const width = coords.x - startX; // Use transformed coordinates
+    const height = coords.y - startY; // Use transformed coordinates
+    // const width = e.clientX - startX;
+    // const height = e.clientY - startY;
     const settings = getCurrentSettings();
 
     if (!ctx) return;
@@ -483,8 +500,10 @@ export async function drawLogic(
         type: "arrow",
         startX: startX,
         startY: startY,
-        endX: e.clientX,
-        endY: e.clientY,
+        endX: coords.x, // Use transformed coordinates
+        endY: coords.y, // Use transformed coordinates
+        // endX: e.clientX,
+        // endY: e.clientY,
         shapeId: uuidv4(),
         strokeColor: settings.strokeColor,
         strokeWidth: settings.strokeWidth,

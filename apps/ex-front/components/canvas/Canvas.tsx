@@ -13,6 +13,7 @@ import {
 import { useDrawingSettings } from "@/stores/StyleOptionStore";
 
 function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
+  const [zoomStatus, updateZoomStatus] = useState<number>();
   const zoomRef = useRef(1);
   const offsetRef = useRef({ x: 0, y: 0 });
   const [currShape, updateShape] = useState<string>("pointer");
@@ -52,9 +53,10 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
     const centerY = canvas.height / 2;
 
     const currentZoom = zoomRef.current;
-    const newZoom = Math.min(10, currentZoom * 1.2); // Max zoom 10x
+    const newZoom = Math.min(3, currentZoom * 1.2); // Cap at 3 (300%)
     zoomRef.current = newZoom;
 
+    updateZoomStatus(zoomRef.current);
     // Zoom towards center
     offsetRef.current.x =
       centerX - ((centerX - offsetRef.current.x) / currentZoom) * newZoom;
@@ -75,7 +77,7 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
     const currentZoom = zoomRef.current;
     const newZoom = Math.max(0.1, currentZoom / 1.2); // Min zoom 0.1x
     zoomRef.current = newZoom;
-
+    updateZoomStatus(zoomRef.current);
     // Zoom towards center
     offsetRef.current.x =
       centerX - ((centerX - offsetRef.current.x) / currentZoom) * newZoom;
@@ -91,6 +93,8 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
     if (!canvas) return;
 
     zoomRef.current = 1;
+    updateZoomStatus(zoomRef.current);
+
     offsetRef.current = { x: 0, y: 0 };
     redraw();
   };
@@ -167,7 +171,8 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
         handleClick,
         zoomRef,
         offsetRef,
-        existingShapesRef
+        existingShapesRef,
+        getCanvasCoordinates
       );
     };
 
@@ -204,15 +209,22 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
         e.deltaY < 0
           ? currentZoom * (1 + zoomIntensity)
           : currentZoom * (1 - zoomIntensity);
-      zoomRef.current = Math.max(0.1, Math.min(10, newZoom)); // clamp zoom
 
-      // Adjust pan offset to zoom around the cursor
-      offsetRef.current.x =
-        mouseX - ((mouseX - offsetRef.current.x) / currentZoom) * newZoom;
-      offsetRef.current.y =
-        mouseY - ((mouseY - offsetRef.current.y) / currentZoom) * newZoom;
+      const clampedZoom = Math.max(0.1, Math.min(3, newZoom));
 
-      redraw();
+      if (clampedZoom !== currentZoom) {
+        zoomRef.current = clampedZoom;
+
+        updateZoomStatus(zoomRef.current);
+
+        // Adjust pan offset to zoom around the cursor
+        offsetRef.current.x =
+          mouseX - ((mouseX - offsetRef.current.x) / currentZoom) * clampedZoom;
+        offsetRef.current.y =
+          mouseY - ((mouseY - offsetRef.current.y) / currentZoom) * clampedZoom;
+
+        redraw();
+      }
     };
 
     const handleMouseDown = (e: MouseEvent) => {
@@ -285,7 +297,17 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
+  const getCanvasCoordinates = (e: MouseEvent, canvas: HTMLCanvasElement) => {
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
 
+    // Transform mouse coordinates to canvas coordinate system
+    const canvasX = (mouseX - offsetRef.current.x) / zoomRef.current;
+    const canvasY = (mouseY - offsetRef.current.y) / zoomRef.current;
+
+    return { x: canvasX, y: canvasY };
+  };
   return (
     <div
       style={{ height: "100vh", overflow: "hidden" }}
@@ -312,7 +334,7 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
           className="bg-white border border-gray-300 rounded px-2 py-1 shadow hover:bg-gray-50 text-xs"
           title="Reset Zoom (Ctrl/Cmd + 0)"
         >
-          {Math.round(zoomRef.current * 100)}%
+          {zoomStatus && Math.round(zoomStatus * 100)}%
         </button>
       </div>
 
@@ -324,6 +346,7 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
 
       <Toolbar changeShape={handleClick} currShape={currShape} />
       <canvas
+        className="w-full h-full"
         ref={canvasRef}
         width={window.innerWidth}
         height={window.innerHeight}

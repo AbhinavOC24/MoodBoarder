@@ -29,6 +29,9 @@ export function clearCanvas(
     y: number;
   }>
 ) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.setTransform(
     zoomRef.current,
     0,
@@ -37,10 +40,10 @@ export function clearCanvas(
     offsetRef.current.x,
     offsetRef.current.y
   );
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = "rgb(0,0,0)";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  console.log(existingShape);
+  // ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // ctx.fillStyle = "rgb(0,0,0)";
+  // ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // console.log(existingShape);
   existingShape.forEach((shape) => {
     if (shape.type === "rect") {
       const {
