@@ -29,6 +29,11 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+// Helper function to get zoom-adjusted values
+function getZoomAdjustedValue(value: number, zoom: number): number {
+  return value / zoom;
+}
+
 export async function drawLogic(
   canvas: HTMLCanvasElement,
   roomId: string,
@@ -59,12 +64,16 @@ export async function drawLogic(
       canvas.removeEventListener("mouseup", handleMouseUp);
     };
 
+  let existingShape: Shape[] = await getExistingShape(roomId);
+  existingShapesRef.current = existingShape;
+
   socket.onmessage = (event) => {
     const message = JSON.parse(event.data);
 
     if (message.type === "chat") {
       const parsedShape = JSON.parse(message.message);
       existingShape.push(parsedShape.shape);
+      existingShapesRef.current = existingShape; // ← Update ref
       clearCanvas(existingShape, canvas, ctx, zoomRef, offsetRef);
     }
 
@@ -73,14 +82,13 @@ export async function drawLogic(
       existingShape = existingShape.filter(
         (shape) => !shapeIdsToDelete.includes(shape.shapeId)
       );
+      existingShapesRef.current = existingShape; // ← Update ref
       clearCanvas(existingShape, canvas, ctx, zoomRef, offsetRef);
     }
   };
 
-  let existingShape: Shape[] = await getExistingShape(roomId);
-  existingShapesRef.current = existingShape;
-
   let deletedShape: Shape[] = [];
+  console.log(deletedShape);
   let pencilPoints: { x: number; y: number }[] = [];
   let eraserPoints: { x: number; y: number }[] = [];
   let start = false;
@@ -154,27 +162,33 @@ export async function drawLogic(
       const inputValue = input.value.trim();
 
       if (inputValue) {
-        const canvasRect = canvas.getBoundingClientRect();
         const settings = getCurrentSettings();
-
-        // Calculate text position
-        const boxWidth = input.getBoundingClientRect().width;
         ctx.font = `${settings.textFontWeight || "normal"} ${settings.textFontSize || 16}px sans-serif`;
         const textWidth = ctx.measureText(inputValue).width;
 
-        let x = parseInt(input.style.left) - canvasRect.left;
-        let y = e.clientY - canvasRect.top;
+        // Get the input box dimensions
+        const inputRect = input.getBoundingClientRect();
+        const zoom = zoomRef.current || 1;
 
-        if (settings.textAlign === "right") {
-          x = x + (boxWidth - textWidth);
-        } else if (settings.textAlign === "center") {
-          x = x + (boxWidth - textWidth) / 2;
+        // Calculate the input box width in canvas coordinates
+        const inputBoxWidth = inputRect.width / zoom;
+
+        let adjustedX = coords.x; // Default for left alignment
+
+        if (settings.textAlign === "center") {
+          // For center: text should be in the middle of the input box
+          // Start of input box + (input width - text width) / 2
+          adjustedX = coords.x + (inputBoxWidth - textWidth) / 2;
+        } else if (settings.textAlign === "right") {
+          // For right: text should be at the end of the input box
+          // Start of input box + (input width - text width)
+          adjustedX = coords.x + (inputBoxWidth - textWidth);
         }
 
         const shape: Shape = {
           type: "text",
-          x: coords.x,
-          y: coords.y,
+          x: adjustedX + 12,
+          y: coords.y - 12,
           text: inputValue,
           fontSize: settings.textFontSize,
           textFontWeight: settings.textFontWeight,
@@ -215,8 +229,6 @@ export async function drawLogic(
 
     start = true;
 
-    // startX = e.clientX;
-    // startY = e.clientY;
     startX = coords.x;
     startY = coords.y;
     if (ShapeRef.current === "pencil") {
@@ -228,16 +240,25 @@ export async function drawLogic(
     if (ShapeRef.current === "text") {
       const canvasRect = canvas.getBoundingClientRect();
       const settings = getCurrentSettings();
+      const zoom = zoomRef.current || 1;
 
       const input = document.createElement("input");
 
       // Store reference to active input
       activeTextInput = input;
-      const canvasCoords = getCanvasCordinates(e, canvas);
-      // Input styling
-      input.style.fontSize = `${settings.textFontSize || 16}px`;
+
+      // Calculate screen position from canvas coordinates
+      // Convert canvas coordinates to screen coordinates using zoom and offset
+      const screenX = coords.x * zoom + offsetRef.current.x + canvasRect.left;
+      const screenY = coords.y * zoom + offsetRef.current.y + canvasRect.top;
+
+      // Input styling with proper zoom scaling
+      // Use the actual font size (not zoom-adjusted) for the input box display
+      const displayFontSize = Math.max(12, settings.textFontSize || 16);
+      input.style.fontSize = `${displayFontSize}px`;
       input.style.fontWeight = settings.textFontWeight || "normal";
       input.style.textAlign = settings.textAlign || "left";
+
       const rgbaColor = hexToRgba(
         settings.textStrokeColor,
         (settings.opacity ?? 100) / 100
@@ -246,10 +267,10 @@ export async function drawLogic(
 
       input.id = "canvas-text-input";
       input.style.position = "absolute";
-      input.style.left = `${e.clientX}px`;
-      input.style.top = `${e.clientY}px`;
+      input.style.left = `${screenX}px`;
+      input.style.top = `${screenY - displayFontSize}px`; // Adjust for baseline
       input.style.border = "1px solid white";
-      input.style.minWidth = "100px";
+      input.style.minWidth = `${Math.max(100, displayFontSize * 6)}px`; // Scale min width with font size
       input.style.fontFamily = "sans-serif";
       input.style.fontStyle = "normal";
       input.style.padding = "4px";
@@ -257,6 +278,10 @@ export async function drawLogic(
       input.style.zIndex = "9999999";
       input.style.outline = "1px solid #007bff";
       input.style.borderRadius = "3px";
+
+      // Scale the input box size with zoom for better visibility
+      input.style.transform = `scale(${Math.max(0.8, zoom)})`;
+      input.style.transformOrigin = "left top";
 
       document.body.appendChild(input);
 
@@ -310,15 +335,18 @@ export async function drawLogic(
     );
     const settings = getCurrentSettings();
     const coords = getCanvasCordinates(e, canvas);
-    // const width = e.clientX - startX;
-    // const height = e.clientY - startY;
     const width = coords.x - startX;
     const height = coords.y - startY;
+
     if (start) {
       if (ShapeRef.current === "rect") {
         clearCanvas(existingShape, canvas, ctx, zoomRef, offsetRef);
 
-        ctx.lineWidth = settings.strokeWidth;
+        // Apply zoom-adjusted stroke width
+        ctx.lineWidth = getZoomAdjustedValue(
+          settings.strokeWidth,
+          zoomRef.current
+        );
         ctx.strokeStyle = settings.strokeColor;
         ctx.globalAlpha = (settings.opacity ?? 100) / 100;
         if (settings.fillStyle === "fill") {
@@ -332,7 +360,11 @@ export async function drawLogic(
       } else if (ShapeRef.current === "circle") {
         clearCanvas(existingShape, canvas, ctx, zoomRef, offsetRef);
 
-        ctx.lineWidth = settings.strokeWidth;
+        // Apply zoom-adjusted stroke width
+        ctx.lineWidth = getZoomAdjustedValue(
+          settings.strokeWidth,
+          zoomRef.current
+        );
         ctx.strokeStyle = settings.strokeColor;
         ctx.globalAlpha = (settings.opacity ?? 100) / 100;
 
@@ -355,7 +387,11 @@ export async function drawLogic(
         pencilPoints.push({ x: coords.x, y: coords.y });
         clearCanvas(existingShape, canvas, ctx, zoomRef, offsetRef);
 
-        ctx.lineWidth = settings.strokeWidth;
+        // Apply zoom-adjusted stroke width
+        ctx.lineWidth = getZoomAdjustedValue(
+          settings.strokeWidth,
+          zoomRef.current
+        );
         ctx.strokeStyle = settings.strokeColor;
         ctx.globalAlpha = (settings.opacity ?? 100) / 100;
 
@@ -372,8 +408,10 @@ export async function drawLogic(
 
         existingShape = existingShape.filter((shape) => {
           const intersect = intersectsEraser(shape, eraserPoints);
+          existingShapesRef.current = existingShape; // ← Update ref
 
           if (intersect) {
+            console.log(shape);
             deletedShape.push(shape);
           }
           return !intersect;
@@ -383,7 +421,11 @@ export async function drawLogic(
         clearCanvas(existingShape, canvas, ctx, zoomRef, offsetRef);
 
         ctx.strokeStyle = settings.strokeColor;
-        ctx.lineWidth = settings.strokeWidth;
+        // Apply zoom-adjusted stroke width
+        ctx.lineWidth = getZoomAdjustedValue(
+          settings.strokeWidth,
+          zoomRef.current
+        );
         ctx.globalAlpha = (settings.opacity ?? 100) / 100;
         drawArrow(ctx, startX, startY, coords.x, coords.y);
         ctx.globalAlpha = 1.0;
@@ -396,10 +438,8 @@ export async function drawLogic(
     start = false;
 
     const coords = getCanvasCordinates(e, canvas);
-    const width = coords.x - startX; // Use transformed coordinates
-    const height = coords.y - startY; // Use transformed coordinates
-    // const width = e.clientX - startX;
-    // const height = e.clientY - startY;
+    const width = coords.x - startX;
+    const height = coords.y - startY;
     const settings = getCurrentSettings();
 
     if (!ctx) return;
@@ -500,10 +540,8 @@ export async function drawLogic(
         type: "arrow",
         startX: startX,
         startY: startY,
-        endX: coords.x, // Use transformed coordinates
-        endY: coords.y, // Use transformed coordinates
-        // endX: e.clientX,
-        // endY: e.clientY,
+        endX: coords.x,
+        endY: coords.y,
         shapeId: uuidv4(),
         strokeColor: settings.strokeColor,
         strokeWidth: settings.strokeWidth,

@@ -127,6 +127,7 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
 
     const setup = async () => {
       if (!canvasRef.current) return;
+      console.log(existingShapesRef);
       clearCanvas(existingShapesRef.current, canvas, ctx, zoomRef, offsetRef);
     };
 

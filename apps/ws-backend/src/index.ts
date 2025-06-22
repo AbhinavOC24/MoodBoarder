@@ -101,7 +101,7 @@ wss.on("connection", function connection(ws, request) {
         const roomId = parsedData.roomId;
 
         const { deletedShape } = JSON.parse(parsedData.message);
-        // console.log("deletedShape", deletedShape);
+        console.log("deletedShape", deletedShape);
         const shapeIdsToDelete = deletedShape.map(
           (shape: any) => shape.shapeId
         );
@@ -113,7 +113,7 @@ wss.on("connection", function connection(ws, request) {
             },
           },
         });
-        // console.log("shapeIdsToDelete", shapeIdsToDelete);
+        console.log("shapeIdsToDelete", shapeIdsToDelete);
         users.forEach((user) => {
           if (user.ws != ws && user.rooms.includes(roomId)) {
             user.ws.send(
