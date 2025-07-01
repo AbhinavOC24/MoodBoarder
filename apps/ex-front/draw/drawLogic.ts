@@ -249,8 +249,8 @@ export async function drawLogic(
 
       // Calculate screen position from canvas coordinates
       // Convert canvas coordinates to screen coordinates using zoom and offset
-      const screenX = coords.x * zoom + offsetRef.current.x + canvasRect.left;
-      const screenY = coords.y * zoom + offsetRef.current.y + canvasRect.top;
+      let screenX = coords.x * zoom + offsetRef.current.x + canvasRect.left;
+      let screenY = coords.y * zoom + offsetRef.current.y + canvasRect.top;
 
       // Input styling with proper zoom scaling
       // Use the actual font size (not zoom-adjusted) for the input box display
@@ -258,6 +258,22 @@ export async function drawLogic(
       input.style.fontSize = `${displayFontSize}px`;
       input.style.fontWeight = settings.textFontWeight || "normal";
       input.style.textAlign = settings.textAlign || "left";
+      const minInputWidth = Math.max(100, displayFontSize * 6);
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+
+      if (screenX + minInputWidth > viewportWidth) {
+        // Position input to the left of the click point
+        screenX = Math.max(10, viewportWidth - minInputWidth - 10);
+      }
+
+      if (screenY < 10) {
+        // Position input below the click point if too close to top
+        screenY = screenY + displayFontSize + 10;
+      } else if (screenY + displayFontSize + 20 > viewportHeight) {
+        // Position input above the click point if too close to bottom
+        screenY = Math.max(10, screenY - displayFontSize - 10);
+      }
 
       const rgbaColor = hexToRgba(
         settings.textStrokeColor,
@@ -266,11 +282,11 @@ export async function drawLogic(
       input.style.color = rgbaColor;
 
       input.id = "canvas-text-input";
-      input.style.position = "absolute";
+      input.style.position = "fixed";
       input.style.left = `${screenX}px`;
       input.style.top = `${screenY - displayFontSize}px`; // Adjust for baseline
       input.style.border = "1px solid white";
-      input.style.minWidth = `${Math.max(100, displayFontSize * 6)}px`; // Scale min width with font size
+      input.style.minWidth = `${Math.min(300, viewportWidth - screenX - 20)}px`; // Scale min width with font size
       input.style.fontFamily = "sans-serif";
       input.style.fontStyle = "normal";
       input.style.padding = "4px";
@@ -278,11 +294,12 @@ export async function drawLogic(
       input.style.zIndex = "9999999";
       input.style.outline = "1px solid #007bff";
       input.style.borderRadius = "3px";
+      input.style.boxSizing = "border-box"; // Include padding in width calculation
 
       // Scale the input box size with zoom for better visibility
-      input.style.transform = `scale(${Math.max(0.8, zoom)})`;
+      const scaleValue = Math.max(0.8, Math.min(1.2, zoom));
+      input.style.transform = `scale(${scaleValue})`;
       input.style.transformOrigin = "left top";
-
       document.body.appendChild(input);
 
       // Focus after a small delay

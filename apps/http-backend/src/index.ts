@@ -16,7 +16,13 @@ import { jwtSecret, NODE_ENV } from "@repo/backend-common/config";
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors());
+
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+    credentials: true,
+  })
+);
 
 app.listen(3001, () => {
   console.log("Server is running on port 3001");
@@ -183,6 +189,18 @@ app.post("/create-room", checkAuth, async (req: Request, res: Response) => {
       message: "Internal server error from create Room",
     });
   }
+});
+app.get("/api/ws-token", checkAuth, (req: Request, res: Response) => {
+  if (!jwtSecret) {
+    res.status(500).json({ message: "Server misconfigured" });
+    return;
+  }
+  console.log("from new endpoint");
+  const wsToken = jwt.sign({ userId: req.userId }, jwtSecret, {
+    expiresIn: "5m",
+  });
+
+  res.json({ wsToken });
 });
 
 app.get("/chats/:roomId", async (req: Request, res: Response) => {
