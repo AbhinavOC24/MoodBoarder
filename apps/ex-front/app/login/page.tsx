@@ -1,4 +1,6 @@
 "use client";
+
+import React, { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,60 +13,56 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useState } from "react";
-import axios from "axios";
+
 import { useRouter } from "next/navigation";
+import axios from "axios";
 
 interface formInterface {
-  username: string;
   email: string;
   password: string;
 }
 
-export default function SignupPage() {
-  const router = useRouter();
-
+export default function LoginPage() {
   const [formData, updateFormData] = useState<formInterface>({
-    username: "",
     email: "",
     password: "",
   });
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
 
-  const [warning, setWarning] = useState<string | null>(null);
-
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError(null);
 
-    // Validation
-    if (!formData.username || !formData.email || !formData.password) {
-      setWarning("All fields are required.");
-      return;
-    }
-    if (formData.username.length < 3 || formData.username.length > 20) {
-      setWarning("Username must be between 3 and 20 characters.");
+    // Client-side validation
+    if (!formData.email || !formData.password) {
+      setError("Please fill in both email and password.");
       return;
     }
     if (formData.password.length < 8) {
-      setWarning("Password must be at least 8 characters long.");
+      setError("Password must be at least 8 characters long.");
       return;
     }
 
-    setWarning(null); // clear warnings on valid input
-
     try {
+      setLoading(true);
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/signup`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/login`,
         formData,
         { withCredentials: true }
       );
-
       localStorage.setItem("token", response.data.token);
       router.push("/");
-    } catch (e: any) {
-      console.error("Signup failed", e.response?.data || e.message);
-      setWarning("Signup failed. Please try again.");
+      // Redirect or show success — for now, just console.log
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message || "Login failed. Please try again."
+      );
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white flex flex-col">
@@ -92,42 +90,27 @@ export default function SignupPage() {
       </header>
 
       <main className="flex-1 container mx-auto flex flex-col items-center justify-center px-4 py-16 relative">
-        {/* Background gradient orbs */}
-        <div className="absolute top-20 end-1/4 size-64 bg-purple-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 start-1/4 size-64 bg-blue-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-20 start-1/4 size-64 bg-purple-500/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 end-1/4 size-64 bg-blue-500/10 rounded-full blur-3xl" />
 
         <Card className="w-full max-w-md bg-zinc-900/80 backdrop-blur-sm border-zinc-800 relative z-10">
           <form onSubmit={handleSubmit}>
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl font-bold text-center">
-                Create an account
+                Welcome back
               </CardTitle>
               <CardDescription className="text-center text-zinc-400">
-                Enter your details to start using SketchSpace
+                Enter your credentials to access your account
               </CardDescription>
             </CardHeader>
+
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <label
-                  htmlFor="username"
-                  className="text-sm font-medium text-zinc-200"
-                >
-                  Username
-                </label>
-                <Input
-                  id="username"
-                  name="username"
-                  placeholder="John"
-                  value={formData.username}
-                  onChange={(e) =>
-                    updateFormData({
-                      ...formData,
-                      [e.target.name]: e.target.value,
-                    })
-                  }
-                  className="bg-zinc-800/50 placeholder:text-gray-500 border-zinc-700 text-white focus:border-purple-500 focus:ring-purple-500/20"
-                />
-              </div>
+              {error && (
+                <div className="text-sm text-red-400 bg-red-900/30 p-2 rounded">
+                  {error}
+                </div>
+              )}
+
               <div className="space-y-2">
                 <label
                   htmlFor="email"
@@ -139,7 +122,6 @@ export default function SignupPage() {
                   id="email"
                   name="email"
                   type="email"
-                  placeholder="name@example.com"
                   value={formData.email}
                   onChange={(e) =>
                     updateFormData({
@@ -147,9 +129,12 @@ export default function SignupPage() {
                       [e.target.name]: e.target.value,
                     })
                   }
-                  className="bg-zinc-800/50 border-zinc-700 placeholder:text-gray-500 text-white focus:border-purple-500 focus:ring-purple-500/20"
+                  placeholder="name@example.com"
+                  required
+                  className="bg-zinc-800/50 placeholder:text-gray-500 border-zinc-700 text-white focus:border-purple-500 focus:ring-purple-500/20"
                 />
               </div>
+
               <div className="space-y-2">
                 <label
                   htmlFor="password"
@@ -161,7 +146,6 @@ export default function SignupPage() {
                   id="password"
                   name="password"
                   type="password"
-                  placeholder="••••••••"
                   value={formData.password}
                   onChange={(e) =>
                     updateFormData({
@@ -169,24 +153,32 @@ export default function SignupPage() {
                       [e.target.name]: e.target.value,
                     })
                   }
-                  className="bg-zinc-800/50 border-zinc-700 placeholder:text-gray-500 text-white focus:border-purple-500 focus:ring-purple-500/20"
+                  placeholder="password"
+                  required
+                  className="bg-zinc-800/50 border-zinc-700 text-white focus:border-purple-500 placeholder:text-gray-500 focus:ring-purple-500/20"
                 />
               </div>
             </CardContent>
+
             <CardFooter className="flex flex-col space-y-4">
-              <Button className="w-full bg-purple-600 cursor-pointer hover:bg-purple-700 text-white">
-                Create Account
+              <Button
+                type="submit"
+                disabled={loading}
+                className={`w-full cursor-pointer ${
+                  loading
+                    ? "bg-purple-800 cursor-not-allowed"
+                    : "bg-purple-600 hover:bg-purple-700"
+                } text-white`}
+              >
+                {loading ? "Logging in..." : "Login"}
               </Button>
-              {warning && (
-                <p className="text-red-400 text-sm text-center">{warning}</p>
-              )}
               <div className="text-center text-sm text-zinc-400">
-                Already have an account?{" "}
+                Don&apos;t have an account?{" "}
                 <Link
-                  href="/login"
+                  href="/signup"
                   className="text-purple-400 hover:text-purple-300"
                 >
-                  Login
+                  Sign up
                 </Link>
               </div>
             </CardFooter>

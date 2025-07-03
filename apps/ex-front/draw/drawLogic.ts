@@ -303,6 +303,7 @@ export async function drawLogic(
       document.body.appendChild(input);
 
       // Focus after a small delay
+
       setTimeout(() => {
         input.focus();
         input.select();

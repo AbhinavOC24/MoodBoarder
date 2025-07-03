@@ -35,6 +35,7 @@ app.get("/", async (req: Request, res: Response) => {
 app.post("/signup", async (req: Request, res: Response) => {
   try {
     const userInfo = createUserSchema.safeParse(req.body);
+
     if (!userInfo.success) {
       res.status(401).json({
         Error: userInfo.error,
@@ -79,6 +80,7 @@ app.post("/signup", async (req: Request, res: Response) => {
       secure: NODE_ENV === "production",
     });
     res.status(201).json({
+      token,
       message: "Signup successful",
     });
   } catch (e) {
@@ -130,6 +132,7 @@ app.post("/login", async (req: Request, res: Response) => {
       secure: NODE_ENV === "production",
     });
     res.status(200).json({
+      token,
       message: "Login successful",
     });
   } catch (e) {
@@ -151,12 +154,14 @@ app.get("/logout", checkAuth, async (req: Request, res: Response) => {
 
 app.post("/create-room", checkAuth, async (req: Request, res: Response) => {
   try {
+    console.log(req.body);
     const roomInfo = createRoomSchema.safeParse(req.body);
+    console.log(roomInfo);
     if (!roomInfo.success) {
       res.status(400).json({ message: "Incorrect inputs" });
       return;
     }
-
+    console.log(roomInfo);
     const checkRoom = await prismaClient.room.findUnique({
       where: {
         slug: roomInfo.data.slug,

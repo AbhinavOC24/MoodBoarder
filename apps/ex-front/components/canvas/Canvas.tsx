@@ -315,7 +315,7 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
       className="relative flex justify-center"
     >
       {/* Zoom Controls */}
-      <div className="absolute top-4 right-4 z-50 flex flex-col gap-2">
+      <div className="absolute top-4 right-4 z-50 flex flex-col text-black gap-2">
         <button
           onClick={zoomIn}
           className="bg-white border border-gray-300 rounded px-3 py-1 shadow hover:bg-gray-50"
