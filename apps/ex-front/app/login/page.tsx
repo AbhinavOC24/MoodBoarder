@@ -53,6 +53,9 @@ export default function LoginPage() {
         { withCredentials: true }
       );
       localStorage.setItem("token", response.data.token);
+      localStorage.setItem("username", response.data.username);
+      localStorage.setItem("userId", response.data.userId);
+
       router.push("/");
       // Redirect or show success — for now, just console.log
     } catch (err: any) {

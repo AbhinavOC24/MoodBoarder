@@ -59,6 +59,8 @@ export default function SignupPage() {
       );
 
       localStorage.setItem("token", response.data.token);
+      localStorage.setItem("username", response.data.username);
+      localStorage.setItem("userId", response.data.userId);
       router.push("/");
     } catch (e: any) {
       console.error("Signup failed", e.response?.data || e.message);
