@@ -175,7 +175,12 @@ export function DrawingSettingsSidebar() {
 
       {/* Opacity */}
       <div>
-        <h3 className="text-sm font-medium mb-2">Opacity</h3>
+        <h3 className="text-sm font-medium mb-2">
+          Opacity
+          <span className="w-8 text-right text-xs ml-2 translate-y-[12px] text-gray-300">
+            {opacity}
+          </span>
+        </h3>
 
         <input
           type="range"
@@ -321,7 +326,12 @@ export function TextDrawingSettingsSidebar() {
 
       {/* Opacity */}
       <div>
-        <h3 className="text-sm font-medium mb-2">Opacity</h3>
+        <h3 className="text-sm font-medium mb-2">
+          Opacity
+          <span className="w-8 text-right text-xs ml-2 translate-y-[12px] text-gray-300">
+            {opacity}
+          </span>
+        </h3>
         <input
           type="range"
           min={0}
@@ -449,7 +459,12 @@ export function ArrowSettingsSidebar() {
 
       {/* Opacity */}
       <div>
-        <h3 className="text-sm font-medium mb-2">Opacity</h3>
+        <h3 className="text-sm font-medium mb-2">
+          Opacity
+          <span className="w-8 text-right text-xs ml-2 translate-y-[12px] text-gray-300">
+            {opacity}
+          </span>
+        </h3>
 
         <input
           type="range"
@@ -459,6 +474,7 @@ export function ArrowSettingsSidebar() {
           onChange={(e) => setOpacity(Number(e.target.value))}
           className="w-full"
         />
+
         <div className="flex justify-between text-xs text-gray-400 mt-1">
           <span>0</span>
           <span>100</span>
@@ -578,17 +594,24 @@ export function PencilSettingsSidebar() {
 
       {/* Opacity */}
       <div>
-        <h3 className="text-sm font-medium mb-2">Opacity</h3>
+        <h3 className="text-sm font-medium mb-2">
+          Opacity
+          <span className="w-8 text-right text-xs ml-2 translate-y-[12px] text-gray-300">
+            {opacity}
+          </span>
+        </h3>
 
-        <input
-          type="range"
-          min={0}
-          max={100}
-          value={opacity}
-          onChange={(e) => setOpacity(Number(e.target.value))}
-          className="w-full"
-        />
-        <div className="flex justify-between text-xs text-gray-400 mt-1">
+        <div className="flex items-center gap-2">
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={opacity}
+            onChange={(e) => setOpacity(Number(e.target.value))}
+            className="w-full"
+          />
+        </div>
+        <div className="flex justify-between text-xs  mt-1">
           <span>0</span>
           <span>100</span>
         </div>

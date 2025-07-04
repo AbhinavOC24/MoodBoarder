@@ -27,131 +27,6 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
     "drawing" | "text" | "arrow" | "pencil" | null
   >(null);
 
-  const handleClick = (currShape: string) => {
-    shapeRef.current = currShape;
-    updateShape(currShape);
-
-    const toolsWithDrawingStyle = ["rect", "circle"];
-
-    if (toolsWithDrawingStyle.includes(currShape)) {
-      setActiveSidebar("drawing");
-    } else if (currShape === "text") {
-      setActiveSidebar("text");
-    } else if (currShape === "arrow") {
-      setActiveSidebar("arrow");
-    } else if (currShape === "pencil") {
-      setActiveSidebar("pencil");
-    } else {
-      setActiveSidebar(null);
-    }
-  };
-  const zoomIn = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-
-    const currentZoom = zoomRef.current;
-    const newZoom = Math.min(3, currentZoom * 1.2); // Cap at 3 (300%)
-    zoomRef.current = newZoom;
-
-    updateZoomStatus(zoomRef.current);
-    // Zoom towards center
-    offsetRef.current.x =
-      centerX - ((centerX - offsetRef.current.x) / currentZoom) * newZoom;
-    offsetRef.current.y =
-      centerY - ((centerY - offsetRef.current.y) / currentZoom) * newZoom;
-
-    redraw();
-  };
-
-  // Zoom out function
-  const zoomOut = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-
-    const currentZoom = zoomRef.current;
-    const newZoom = Math.max(0.1, currentZoom / 1.2); // Min zoom 0.1x
-    zoomRef.current = newZoom;
-    updateZoomStatus(zoomRef.current);
-    // Zoom towards center
-    offsetRef.current.x =
-      centerX - ((centerX - offsetRef.current.x) / currentZoom) * newZoom;
-    offsetRef.current.y =
-      centerY - ((centerY - offsetRef.current.y) / currentZoom) * newZoom;
-
-    redraw();
-  };
-
-  // Reset zoom to 100%
-  const resetZoom = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    zoomRef.current = 1;
-    updateZoomStatus(zoomRef.current);
-
-    offsetRef.current = { x: 0, y: 0 };
-    redraw();
-  };
-
-  const redraw = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    ctx.save();
-    ctx.setTransform(
-      zoomRef.current,
-      0,
-      0,
-      zoomRef.current,
-      offsetRef.current.x,
-      offsetRef.current.y
-    );
-    ctx.clearRect(
-      -offsetRef.current.x / zoomRef.current,
-      -offsetRef.current.y / zoomRef.current,
-      canvas.width / zoomRef.current,
-      canvas.height / zoomRef.current
-    );
-    // 🔴 Call your actual draw function here if needed
-
-    let cleanupFn: (() => void) | undefined;
-
-    const setup = async () => {
-      if (!canvasRef.current) return;
-
-      clearCanvas(existingShapesRef.current, canvas, ctx, zoomRef, offsetRef);
-    };
-
-    setup();
-
-    cleanupFn?.(); // Call the actual cleanup function if it exists
-
-    ctx.restore();
-  };
-  const renderSidebar = () => {
-    switch (activeSidebar) {
-      case "drawing":
-        return <DrawingSettingsSidebar />;
-      case "text":
-        return <TextDrawingSettingsSidebar />;
-      case "arrow":
-        return <ArrowSettingsSidebar />;
-      case "pencil":
-        return <PencilSettingsSidebar />;
-      default:
-        return null;
-    }
-  };
-
   useEffect(() => {
     settingsRef.current = drawingSettings;
   }, [drawingSettings]);
@@ -296,6 +171,132 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
+
+  const handleClick = (currShape: string) => {
+    shapeRef.current = currShape;
+    updateShape(currShape);
+
+    const toolsWithDrawingStyle = ["rect", "circle"];
+
+    if (toolsWithDrawingStyle.includes(currShape)) {
+      setActiveSidebar("drawing");
+    } else if (currShape === "text") {
+      setActiveSidebar("text");
+    } else if (currShape === "arrow") {
+      setActiveSidebar("arrow");
+    } else if (currShape === "pencil") {
+      setActiveSidebar("pencil");
+    } else {
+      setActiveSidebar(null);
+    }
+  };
+  const zoomIn = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+
+    const currentZoom = zoomRef.current;
+    const newZoom = Math.min(3, currentZoom * 1.2); // Cap at 3 (300%)
+    zoomRef.current = newZoom;
+
+    updateZoomStatus(zoomRef.current);
+    // Zoom towards center
+    offsetRef.current.x =
+      centerX - ((centerX - offsetRef.current.x) / currentZoom) * newZoom;
+    offsetRef.current.y =
+      centerY - ((centerY - offsetRef.current.y) / currentZoom) * newZoom;
+
+    redraw();
+  };
+
+  // Zoom out function
+  const zoomOut = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+
+    const currentZoom = zoomRef.current;
+    const newZoom = Math.max(0.1, currentZoom / 1.2); // Min zoom 0.1x
+    zoomRef.current = newZoom;
+    updateZoomStatus(zoomRef.current);
+    // Zoom towards center
+    offsetRef.current.x =
+      centerX - ((centerX - offsetRef.current.x) / currentZoom) * newZoom;
+    offsetRef.current.y =
+      centerY - ((centerY - offsetRef.current.y) / currentZoom) * newZoom;
+
+    redraw();
+  };
+
+  // Reset zoom to 100%
+  const resetZoom = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    zoomRef.current = 1;
+    updateZoomStatus(zoomRef.current);
+
+    offsetRef.current = { x: 0, y: 0 };
+    redraw();
+  };
+
+  const redraw = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.save();
+    ctx.setTransform(
+      zoomRef.current,
+      0,
+      0,
+      zoomRef.current,
+      offsetRef.current.x,
+      offsetRef.current.y
+    );
+    ctx.clearRect(
+      -offsetRef.current.x / zoomRef.current,
+      -offsetRef.current.y / zoomRef.current,
+      canvas.width / zoomRef.current,
+      canvas.height / zoomRef.current
+    );
+    // 🔴 Call your actual draw function here if needed
+
+    let cleanupFn: (() => void) | undefined;
+
+    const setup = async () => {
+      if (!canvasRef.current) return;
+
+      clearCanvas(existingShapesRef.current, canvas, ctx, zoomRef, offsetRef);
+    };
+
+    setup();
+
+    cleanupFn?.(); // Call the actual cleanup function if it exists
+
+    ctx.restore();
+  };
+  const renderSidebar = () => {
+    switch (activeSidebar) {
+      case "drawing":
+        return <DrawingSettingsSidebar />;
+      case "text":
+        return <TextDrawingSettingsSidebar />;
+      case "arrow":
+        return <ArrowSettingsSidebar />;
+      case "pencil":
+        return <PencilSettingsSidebar />;
+      default:
+        return null;
+    }
+  };
+
   const getCanvasCoordinates = (e: MouseEvent, canvas: HTMLCanvasElement) => {
     const rect = canvas.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
@@ -345,7 +346,13 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
 
       <Toolbar changeShape={handleClick} currShape={currShape} />
       <canvas
-        className="w-full h-full"
+        className={`w-full h-full ${
+          currShape !== "pointer" &&
+          currShape !== "pan" &&
+          currShape !== "eraser"
+            ? "cursor-crosshair"
+            : "cursor-default"
+        }`}
         ref={canvasRef}
         width={window.innerWidth}
         height={window.innerHeight}
