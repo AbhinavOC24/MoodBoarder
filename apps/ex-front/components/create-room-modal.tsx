@@ -15,12 +15,13 @@ import {
 } from "./ui/dialog";
 import { ChevronRight, Loader2 } from "lucide-react";
 import axios from "axios";
-
+import { useRouter } from "next/navigation";
 interface CreateRoomModalProps {
   children: React.ReactNode;
 }
 
 export function CreateRoomModal({ children }: CreateRoomModalProps) {
+  const router = useRouter();
   const [slug, setSlug] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -39,9 +40,11 @@ export function CreateRoomModal({ children }: CreateRoomModalProps) {
         { slug },
         { withCredentials: true }
       );
+      const roomId = response.data.roomId;
       console.log(response);
       setIsOpen(false);
       setSlug("");
+      router.push(`/canvas/${roomId}`);
     } catch (e: any) {
       console.log("Error from create-room-modal", e.response.data.message);
     } finally {

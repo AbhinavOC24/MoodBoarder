@@ -5,14 +5,19 @@ import { WS_URL } from "@/config";
 import React, { useEffect, useRef, useState } from "react";
 import Canvas from "./Canvas";
 import axios from "axios";
-
+import { useRouter } from "next/navigation";
 export default function CanvasRoom({ roomId }: { roomId: string }) {
   const [socket, setSocket] = useState<WebSocket | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push("/login");
+      return;
+    }
     const ws = new WebSocket(
-      `${WS_URL}?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIzNzk1MmIxNS05NDY3LTQwNjYtYTM3Yy1hMmQ3NDQzNzE5YjAiLCJpYXQiOjE3NTEzNDQ0NTcsImV4cCI6MTc1MTk0OTI1N30.2R_77vw1AelewpxmFWe5Doa0Hx6XYbik9yl6OxTfhvI
-
+      `${WS_URL}?token=${token}
   `
     );
     ws.onopen = () => {

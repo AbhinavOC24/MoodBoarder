@@ -127,7 +127,7 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
 
     const setup = async () => {
       if (!canvasRef.current) return;
-      console.log(existingShapesRef);
+
       clearCanvas(existingShapesRef.current, canvas, ctx, zoomRef, offsetRef);
     };
 
@@ -162,7 +162,7 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
 
     const setup = async () => {
       if (!canvasRef.current) return;
-      console.log("got called");
+
       cleanupFn = await drawLogic(
         canvasRef.current,
         roomId,
@@ -180,8 +180,6 @@ function Canvas({ roomId, socket }: { roomId: string; socket: WebSocket }) {
     setup();
 
     return () => {
-      console.log("cleanup trigger");
-
       cleanupFn?.();
     };
   }, [canvasRef, roomId, socket]);

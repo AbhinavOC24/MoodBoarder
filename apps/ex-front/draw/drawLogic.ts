@@ -88,7 +88,7 @@ export async function drawLogic(
   };
 
   let deletedShape: Shape[] = [];
-  console.log(deletedShape);
+
   let pencilPoints: { x: number; y: number }[] = [];
   let eraserPoints: { x: number; y: number }[] = [];
   let start = false;
@@ -323,7 +323,6 @@ export async function drawLogic(
       };
 
       const handleBlur = (e: FocusEvent) => {
-        // Small delay to prevent immediate blur when clicking on canvas
         setTimeout(() => {
           if (activeTextInput === input) {
             completeTextInput();
@@ -429,7 +428,6 @@ export async function drawLogic(
           existingShapesRef.current = existingShape; // ← Update ref
 
           if (intersect) {
-            console.log(shape);
             deletedShape.push(shape);
           }
           return !intersect;
