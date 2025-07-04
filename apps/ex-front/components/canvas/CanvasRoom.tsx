@@ -32,40 +32,6 @@ export default function CanvasRoom({ roomId }: { roomId: string }) {
     };
   }, []);
 
-  // useEffect(() => {
-  //   if (!roomId) return;
-
-  //   async function startConnection() {
-  //     // Fetch a short-lived WS token
-  //     const res = await axios.get("http://localhost:3001/api/ws-token", {
-  //       withCredentials: true,
-  //     });
-
-  //     const { wsToken } = await res.data;
-
-  //     // Connect to WS
-  //     const ws = new WebSocket(`${WS_URL}?token=${wsToken}`);
-  //     ws.onopen = () => {
-  //       console.log("WS connected");
-  //       setSocket(ws);
-
-  //       ws.send(
-  //         JSON.stringify({
-  //           type: "join_room",
-  //           roomId,
-  //         })
-  //       );
-  //     };
-
-  //     ws.onclose = () => {
-  //       console.log("WS disconnected");
-  //       setSocket(null);
-  //     };
-  //   }
-
-  //   startConnection();
-  // }, [roomId]);
-
   if (!socket) return <div>Connecting to server...</div>;
   return (
     <>
