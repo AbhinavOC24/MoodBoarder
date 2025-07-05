@@ -69,9 +69,11 @@ app.post("/signup", async (req: Request, res: Response) => {
       },
       select: {
         id: true,
+        username: true,
       },
     });
     const userId = userInfoFromDb.id;
+    const username = userInfoFromDb.username;
     const token = jwt.sign({ userId }, jwtSecret, {
       expiresIn: "7d",
     });
@@ -81,6 +83,8 @@ app.post("/signup", async (req: Request, res: Response) => {
     });
     res.status(201).json({
       token,
+      userId,
+      username,
       message: "Signup successful",
     });
   } catch (e) {
@@ -124,6 +128,7 @@ app.post("/login", async (req: Request, res: Response) => {
     }
 
     const userId = userInfoFromDb.id;
+    const username = userInfoFromDb.username;
     const token = jwt.sign({ userId }, jwtSecret as string, {
       expiresIn: "7d",
     });
@@ -133,6 +138,8 @@ app.post("/login", async (req: Request, res: Response) => {
     });
     res.status(200).json({
       token,
+      username,
+      userId,
       message: "Login successful",
     });
   } catch (e) {

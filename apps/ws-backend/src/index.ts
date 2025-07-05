@@ -63,6 +63,16 @@ wss.on("connection", function connection(ws, request) {
         user.rooms = user?.rooms.filter((x) => x != parsedData.roomId);
       }
 
+      if (parsedData.type === "mouse-move") {
+        users.forEach((user) => {
+          if (user.ws != ws) {
+            if (user.rooms.includes(parsedData.roomId)) {
+              user.ws.send(JSON.stringify(parsedData));
+            }
+          }
+        });
+      }
+
       if (parsedData.type === "chat") {
         const roomId = parsedData.roomId;
         const message = parsedData.message;
