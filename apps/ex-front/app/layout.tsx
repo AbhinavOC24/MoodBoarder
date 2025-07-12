@@ -7,7 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "SketchSpace - Collaborative Whiteboarding",
+  title: "Wiremap - Collaborative Whiteboarding",
   description:
     "Create, collaborate, and share diagrams and sketches in real-time with anyone, anywhere.",
 };
